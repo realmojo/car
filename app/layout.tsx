@@ -28,6 +28,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
   applicationName: SITE.name,
   formatDetection: { telephone: false, email: false, address: false },
+  verification: {
+    other: {
+      "naver-site-verification": "44255b69ada27c1c77482465df24c4e738cc2161",
+    },
+  },
 };
 
 export const viewport: Viewport = {

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 
 /** 사이트 전역 SEO 설정 */
 export const SITE = {
-  name: "김군카",
-  nameEn: "Car Kimgoon",
+  name: "차곳간",
+  nameEn: "Chagotgan",
   url: process.env.NEXT_PUBLIC_BASE_URL || "https://car.kimgoon.kr",
   locale: "ko_KR",
   description:
