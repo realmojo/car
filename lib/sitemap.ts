@@ -1,9 +1,7 @@
 /**
- * 사이트맵 구성.
- *
- * /sitemap.xml              사이트맵 인덱스
- * /sitemaps/pages.xml       홈·카테고리·지역별 목록·가이드
- * /sitemaps/<데이터>-<n>.xml  상세 페이지 (주차장·정비소·검사소는 5,000개씩 나눈다)
+ * 사이트맵 구성. /sitemap.xml 한 파일에 모든 주소를 담는다.
+ * 홈·카테고리·지역별 목록·가이드 다음에 DB 의 상세 페이지를 붙인다.
+ * 사이트맵 한 파일의 한도(50,000개)를 넘는 주소는 잘라낸다.
  */
 import { SIDO } from "./codes";
 import { GUIDES } from "./guides";
@@ -11,9 +9,10 @@ import { NAV, SITE_LINKS } from "./menu";
 import { absoluteUrl } from "./seo";
 import { withQuery } from "./url";
 import { loadRows } from "./datasets";
-import { countPlaces, listPlaceKeys, type PlaceDataset } from "./places";
+import { listPlaceKeys, type PlaceDataset } from "./places";
 
-export const CHUNK = 5000;
+/** 사이트맵 한 파일에 넣을 수 있는 최대 주소 수 */
+export const MAX_URLS = 50000;
 
 export interface UrlEntry {
   loc: string;
@@ -28,25 +27,12 @@ const PLACE_PATHS: Record<PlaceDataset, (sido: string, key: string) => string> =
   inspection: (sido, key) => `/repair/insp-${sido}-${key}`,
 };
 
-/** 동기화 파일 기반 상세 페이지 */
+/** 수소충전소·휴게소·리콜 상세 페이지 */
 const FILE_PATHS = {
   hydrogen: (key: string) => `/charge/h2-${key}`,
   rest: (key: string) => `/road/rest-${key}`,
   recall: (key: string) => `/repair/recall-${key}`,
 } as const;
-
-export async function sitemapNames(): Promise<string[]> {
-  const names = ["pages"];
-  const places: PlaceDataset[] = ["parking", "repair", "inspection"];
-  const counts = await Promise.all(places.map((d) => countPlaces(d).catch(() => 0)));
-  places.forEach((d, i) => {
-    for (let n = 1; n <= Math.ceil(counts[i] / CHUNK); n++) names.push(`${d}-${n}`);
-  });
-  for (const d of Object.keys(FILE_PATHS) as Array<keyof typeof FILE_PATHS>) {
-    if ((await loadRows(d))?.length) names.push(d);
-  }
-  return names;
-}
 
 function pages(): UrlEntry[] {
   const e = (path: string, priority: number, changefreq: UrlEntry["changefreq"] = "weekly"): UrlEntry => ({
@@ -70,31 +56,28 @@ function pages(): UrlEntry[] {
   ];
 }
 
-export async function sitemapEntries(name: string): Promise<UrlEntry[] | null> {
-  if (name === "pages") return pages();
+export async function sitemapEntries(): Promise<UrlEntry[]> {
+  const out = pages();
 
-  const place = name.match(/^(parking|repair|inspection)-(\d+)$/);
-  if (place) {
-    const dataset = place[1] as PlaceDataset;
-    const n = Number(place[2]);
-    if (n < 1) return null;
-    const rows = await listPlaceKeys(dataset, (n - 1) * CHUNK, CHUNK);
-    if (!rows.length) return null;
-    return rows.map((r) => ({
-      loc: absoluteUrl(PLACE_PATHS[dataset](r.sido, r.key)),
-      lastmod: r.syncedAt?.slice(0, 10),
-      changefreq: "monthly",
-      priority: 0.6,
-    }));
+  for (const d of Object.keys(FILE_PATHS) as Array<keyof typeof FILE_PATHS>) {
+    const rows = await loadRows(d).catch(() => null);
+    for (const r of rows ?? []) out.push({ loc: absoluteUrl(FILE_PATHS[d](r.key)), changefreq: "monthly", priority: 0.5 });
   }
 
-  if (name in FILE_PATHS) {
-    const d = name as keyof typeof FILE_PATHS;
-    const rows = await loadRows(d);
-    if (!rows?.length) return null;
-    return rows.map((r) => ({ loc: absoluteUrl(FILE_PATHS[d](r.key)), changefreq: "monthly", priority: 0.5 }));
+  for (const d of Object.keys(PLACE_PATHS) as PlaceDataset[]) {
+    const room = MAX_URLS - out.length;
+    if (room <= 0) break;
+    const rows = await listPlaceKeys(d, 0, room).catch(() => []);
+    for (const r of rows) {
+      out.push({
+        loc: absoluteUrl(PLACE_PATHS[d](r.sido, r.key)),
+        lastmod: r.syncedAt?.slice(0, 10),
+        changefreq: "monthly",
+        priority: 0.6,
+      });
+    }
   }
-  return null;
+  return out.slice(0, MAX_URLS);
 }
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -109,14 +92,6 @@ export function urlsetXml(entries: UrlEntry[]) {
     )
     .join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${items}\n</urlset>\n`;
-}
-
-export function indexXml(names: string[]) {
-  const today = new Date().toISOString().slice(0, 10);
-  const items = names
-    .map((n) => `<sitemap><loc>${esc(absoluteUrl(`/sitemaps/${n}.xml`))}</loc><lastmod>${today}</lastmod></sitemap>`)
-    .join("\n");
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${items}\n</sitemapindex>\n`;
 }
 
 export const XML_HEADERS = {
