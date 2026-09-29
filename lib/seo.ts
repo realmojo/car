@@ -54,9 +54,14 @@ export function buildMetadata({
       siteName: SITE.name,
       locale: SITE.locale,
       type: "website",
+      images: [{ url: "/og.png", width: 1200, height: 630, alt: SITE.name }],
     },
-    twitter: { card: "summary", title, description },
-    robots: { index: true, follow: true },
+    twitter: { card: "summary_large_image", title, description, images: ["/og.png"] },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+    },
   };
 }
 

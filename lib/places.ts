@@ -158,3 +158,41 @@ export async function findPlace(dataset: PlaceDataset, id: string): Promise<{ ro
   const row = await getPlace(dataset, m[2]);
   return row ? { row, sido: row.sido ?? m[1] } : null;
 }
+
+/** 사이트맵용: 상세 URL 에 필요한 키만 순서대로 가져온다 (PostgREST 한 번에 최대 1,000건) */
+export async function listPlaceKeys(
+  dataset: PlaceDataset,
+  offset: number,
+  limit: number,
+): Promise<Array<{ key: string; sido: string; syncedAt?: string }>> {
+  if (mock()) {
+    const out: Array<{ key: string; sido: string }> = [];
+    for (const s of ["seoul", "gyeonggi", "busan"]) {
+      for (const r of (await loadRows(dataset, s)) ?? []) out.push({ key: r.key, sido: s });
+    }
+    return out.slice(offset, offset + limit);
+  }
+  const out: Array<{ key: string; sido: string; syncedAt?: string }> = [];
+  for (let start = offset; start < offset + limit; start += 1000) {
+    const p = new URLSearchParams({
+      select: "key,sido,synced_at",
+      sido: "not.is.null",
+      order: "key.asc",
+      offset: String(start),
+      limit: String(Math.min(1000, offset + limit - start)),
+    });
+    const url = `${SUPABASE_URL}/rest/v1/${TABLES[dataset]}?${p}`;
+    const rows = await cached(`sb:${url}`, 3600, async () => {
+      const res = await fetch(url, {
+        signal: AbortSignal.timeout(15000),
+        cache: "no-store",
+        headers: { apikey: SUPABASE_KEY, accept: "application/json" },
+      });
+      if (!res.ok) throw new Error(`데이터베이스 오류 (${res.status})`);
+      return (await res.json()) as Array<{ key: string; sido: string; synced_at: string }>;
+    });
+    out.push(...rows.map((r) => ({ key: r.key, sido: r.sido, syncedAt: r.synced_at })));
+    if (rows.length < 1000) break;
+  }
+  return out;
+}

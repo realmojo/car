@@ -98,6 +98,17 @@ npm run dev
 데이터를 갱신하려면 새 CSV 를 커밋하거나 대시보드에서 다시 배포하세요.
 Node 버전은 `.node-version` (22) 으로 고정했습니다. `wrangler.jsonc` 의 `name`("car")은 대시보드의 Worker 이름과 같아야 합니다.
 
+## 검색엔진용 파일
+
+| 경로 | 내용 |
+|---|---|
+| `/robots.txt` | `app/robots.txt/route.ts`. 네이버(Yeti)·다음(Daumoa) 규칙 포함. 다음 소유확인 값은 `DAUM_VERIFICATION` 에 넣는다 |
+| `/sitemap.xml` | 사이트맵 인덱스 (`lib/sitemap.ts`) |
+| `/sitemaps/pages.xml` | 홈·카테고리·시도별 목록·가이드 |
+| `/sitemaps/{parking,repair,inspection}-N.xml` | Supabase 상세 페이지, 5,000개씩 |
+| `/sitemaps/{hydrogen,rest,recall}.xml` | 동기화 파일 상세 페이지 |
+| `/ads.txt`, `/manifest.webmanifest`, `/og.png` | 애드센스, 웹 앱 매니페스트, 공유 이미지 |
+
 ## 키 확인
 
 ```bash
