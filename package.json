@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node --no-warnings --experimental-strip-types scripts/sync-data.ts --soft hydrogen rest recall efficiency && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "data:sync": "node --no-warnings --experimental-strip-types scripts/sync-data.ts",
@@ -14,7 +14,6 @@
     "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "check:apis": "node --no-warnings --experimental-strip-types scripts/check-apis.ts",
-    "build:app": "next build",
     "cf:upload": "opennextjs-cloudflare build && wrangler versions upload"
   },
   "dependencies": {
