@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = buildMetadata({
   path: "/road",
-  title: "실시간 도로 CCTV·돌발상황·고속도로 휴게소 정보 | 김군카",
+  title: "실시간 도로 CCTV·돌발상황·고속도로 휴게소 정보",
   description: "고속도로·국도 실시간 CCTV와 사고·공사·기상 돌발상황, 주의운전구간, 노선별 휴게소와 졸음쉼터 정보를 확인하세요.",
   keywords: ["고속도로 CCTV", "도로 CCTV", "돌발상황", "고속도로 사고", "고속도로 휴게소", "졸음쉼터"],
 });

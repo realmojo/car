@@ -15,6 +15,12 @@ export function absoluteUrl(path: string): string {
   return `${SITE.url}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
+/** GA4 측정 ID. NEXT_PUBLIC_GA_ID 로 바꿀 수 있고, 기본값은 keywordegg 와 같은 ID */
+export const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "G-5BM9W5BC3P";
+
+/** 네이버 애널리틱스 사이트 ID */
+export const NAVER_WA = "1220e9356811e60";
+
 export interface BuildMetadataInput {
   path: string;
   title: string;
@@ -34,6 +40,8 @@ export function buildMetadata({
   keywords,
 }: BuildMetadataInput): Metadata {
   const url = absoluteUrl(path);
+  // 모든 페이지 제목 끝에 사이트 이름을 붙인다 (이름은 SITE.name 한 곳에서만 바꾼다)
+  title = title.includes(SITE.name) ? title : `${title} | ${SITE.name}`;
   return {
     title,
     description,

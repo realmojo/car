@@ -40,8 +40,8 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   if (!r) return {};
   const title =
     r.kind.type === "recall"
-      ? `${r.row.sub} ${r.row.name} 리콜 - 결함 내용과 시정 방법 | 김군카`
-      : `${r.row.name} - ${r.kind.label} 위치·연락처·운영시간 | 김군카`;
+      ? `${r.row.sub} ${r.row.name} 리콜 - 결함 내용과 시정 방법`
+      : `${r.row.name} - ${r.kind.label} 위치·연락처·운영시간`;
   return buildMetadata({ path: `/repair/${id}`, title, description: describe(r.row).slice(0, 150) });
 }
 

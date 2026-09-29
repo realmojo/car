@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = buildMetadata({
   path: "/repair",
-  title: "정비소·자동차 검사소 찾기, 리콜 조회 | 김군카",
+  title: "정비소·자동차 검사소 찾기, 리콜 조회",
   description: "동네 자동차 정비소와 종합·소형·전문 정비업체, 가까운 자동차 검사소를 찾고 내 차의 리콜 정보를 조회하세요.",
   keywords: ["자동차 정비소", "정비업체", "자동차 검사소", "자동차 리콜 조회", "리콜 차량"],
 });

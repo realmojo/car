@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
-import { SITE, buildMetadata } from "@/lib/seo";
+import { GA_ID, NAVER_WA, SITE, buildMetadata } from "@/lib/seo";
 import SiteHeader from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
 
-const title = "김군카 - 전기차 충전소·주차장·정비소·도로 상황 찾기";
+const title = `${SITE.name} - 전기차 충전소·주차장·정비소·도로 상황 찾기`;
 
 export const metadata: Metadata = {
   ...buildMetadata({
@@ -57,11 +58,31 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
+        {/* 네이버 애널리틱스: 받은 코드 그대로 동기 로드 후 wcs_do() 실행 */}
+        <script id="naver-analytics" src="//wcs.pstatic.net/wcslog.js" />
+        <script
+          id="naver-analytics-init"
+          dangerouslySetInnerHTML={{
+            __html: `if(!wcs_add) var wcs_add = {}; wcs_add["wa"] = "${NAVER_WA}"; if(window.wcs) { wcs_do(); }`,
+          }}
+        />
       </head>
       <body>
         <SiteHeader />
         <main className="site-main">{children}</main>
         <SiteFooter />
+
+        {/* Google tag (gtag.js) - keywordegg 와 같은 방식: 하이드레이션 이후 로드 */}
+        <Script id="gtag-src" strategy="afterInteractive" src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', '${GA_ID}');
+          `}
+        </Script>
       </body>
     </html>
   );

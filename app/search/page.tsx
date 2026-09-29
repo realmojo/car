@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = buildMetadata({
   path: "/search",
-  title: "통합 검색 - 주차장·정비소·검사소·충전소·휴게소 | 김군카",
+  title: "통합 검색 - 주차장·정비소·검사소·충전소·휴게소",
   description: "동네 이름이나 시설 이름으로 주차장, 정비소, 자동차 검사소, 수소충전소, 휴게소를 한 번에 검색하세요.",
 });
 

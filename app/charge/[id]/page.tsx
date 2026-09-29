@@ -46,13 +46,13 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     const fast = r.station.chargers.filter((c) => c.fast).length;
     return buildMetadata({
       path: `/charge/${id}`,
-      title: `${r.station.name} 전기차 충전소 - 충전기 ${r.station.chargers.length}대 실시간 상태 | 김군카`,
+      title: `${r.station.name} 전기차 충전소 - 충전기 ${r.station.chargers.length}대 실시간 상태`,
       description: `${r.station.address} ${r.station.name}. 급속 ${fast}대, 완속 ${r.station.chargers.length - fast}대. 운영기관 ${r.station.operator}, ${r.station.useTime}.`,
     });
   }
   return buildMetadata({
     path: `/charge/${id}`,
-    title: `${r.row.name} - 수소충전소 위치·운영시간 | 김군카`,
+    title: `${r.row.name} - 수소충전소 위치·운영시간`,
     description: `${r.row.address ?? ""} ${r.row.name}. ${r.row.tags.join(", ")}`,
   });
 }

@@ -5,7 +5,7 @@ import Crumbs from "@/components/common/Crumbs";
 
 export const metadata: Metadata = buildMetadata({
   path: "/guide",
-  title: "자동차 가이드 - 연비 순위, 전기차 주행거리, 충전 규격, 검사 주기 | 김군카",
+  title: "자동차 가이드 - 연비 순위, 전기차 주행거리, 충전 규격, 검사 주기",
   description: "공공데이터로 정리한 차종별 연비 순위와 전기차 주행거리, 충전 규격, 자동차 검사 주기, 유류비 계산기를 한곳에서 확인하세요.",
 });
 

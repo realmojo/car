@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const fee = row.info.find(([k]) => k === "기본 요금")?.[1] ?? row.tags[0] ?? "";
   return buildMetadata({
     path: `/parking/${id}`,
-    title: `${row.name} - 주차 요금·운영시간·위치 | 김군카`,
+    title: `${row.name} - 주차 요금·운영시간·위치`,
     description: `${row.address} ${row.name}(${row.sub}). ${fee} ${row.tags.join(", ")}`.trim(),
   });
 }

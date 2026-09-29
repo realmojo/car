@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     const roadName = route || (r.cctv.road === "ex" ? "고속도로" : "국도");
     return buildMetadata({
       path: `/road/${id}`,
-      title: `${place} CCTV - ${roadName} 실시간 도로 영상 | 김군카`,
+      title: `${place} CCTV - ${roadName} 실시간 도로 영상`,
       description: `${roadName} ${place} 구간의 실시간 교통 CCTV 영상입니다. 지금 도로 상황과 주변 CCTV를 확인하세요.`,
       keywords: [`${place} CCTV`, `${roadName} CCTV`, `${place} 교통상황`],
     });
@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const { row } = r;
   return buildMetadata({
     path: `/road/${id}`,
-    title: `${row.name} (${row.sub}) - 휴게소 위치·주차·편의시설 | 김군카`,
+    title: `${row.name} (${row.sub}) - 휴게소 위치·주차·편의시설`,
     description: `${row.sub} ${row.name}. ${row.info.map(([k, v]) => `${k} ${v}`).join(", ")}`.slice(0, 150),
   });
 }

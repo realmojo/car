@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = buildMetadata({
   path: "/charge",
-  title: "전기차·수소 충전소 찾기 - 실시간 충전기 상태 | 김군카",
+  title: "전기차·수소 충전소 찾기 - 실시간 충전기 상태",
   description:
     "시군구별 전기차 충전소 위치와 급속·완속 충전기, 지금 충전 가능한 충전기 수, 전국 수소충전소 위치와 운영 정보를 확인하세요.",
   keywords: ["전기차 충전소", "충전소 위치", "급속 충전소", "충전기 상태", "수소충전소"],

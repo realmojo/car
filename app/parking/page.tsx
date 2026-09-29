@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = buildMetadata({
   path: "/parking",
-  title: "주차장 찾기 - 공영·무료 주차장 위치, 요금, 운영시간 | 김군카",
+  title: "주차장 찾기 - 공영·무료 주차장 위치, 요금, 운영시간",
   description: "전국 공영·민영 주차장의 위치와 주차 요금, 운영시간, 주차면 수를 시군구별로 확인하세요. 무료 주차장만 골라 볼 수도 있습니다.",
   keywords: ["주차장", "공영주차장", "무료 주차장", "주차 요금", "주차장 위치"],
 });
