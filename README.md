@@ -32,23 +32,23 @@ UI 는 keywordegg.com 의 콘텐츠 스킨(다크 셸 + 아이보리 카드, 올
 
 | 테이블 | 원본 | 적재 방식 |
 |---|---|---|
-| `car_parking` | 전국주차장정보표준데이터 | 표준데이터 OpenAPI, 1,000건씩 |
-| `car_repair` | 전국자동차정비업체표준데이터 | 표준데이터 OpenAPI, 1,000건씩 |
-| `car_inspection` | 전국자동차검사소표준데이터 | 표준데이터 OpenAPI, 1,000건씩 |
+| `car_parking` | 전국주차장정보표준데이터 | 포털 전체 다운로드 JSON, 10,000건씩 |
+| `car_repair` | 전국자동차정비업체표준데이터 | 포털 전체 다운로드 JSON, 10,000건씩 |
+| `car_inspection` | 전국자동차검사소표준데이터 | 포털 전체 다운로드 JSON, 10,000건씩 |
 | `car_rest` | 한국도로공사 휴게시설 (주유소 행 제외) | data.ex.co.kr API 한 번 |
 | `car_hydrogen` | 한국가스안전공사_수소충전소 현황 | 공공데이터포털 파일 다운로드 |
 | `car_recall` | 한국교통안전공단_자동차결함 리콜현황 | 공공데이터포털 파일 다운로드 |
 | `car_efficiency` | 한국에너지공단_자동차 표시연비 | 공공데이터포털 파일 다운로드 |
 
 - 적재: Edge Function `car-sync` (`supabase/functions/car-sync`). 변환 규칙은 `lib/mappers.ts` 를 함께 씁니다
-- 인증키: Supabase Vault `car_data_go_kr_key`, `car_ex_key` (Edge Function 이 service_role 전용 `car_sync_config()` 로 읽음)
+- 인증키: Supabase Vault `car_ex_key` (휴게소) (Edge Function 이 service_role 전용 `car_sync_config()` 로 읽음)
 - 수동 실행: `select public.car_sync_dataset('parking');` (나머지 이름도 같음)
 - 자동 갱신: pg_cron 매월 1일 새벽(한국시간) 전체 재적재, 15일에 45일 넘게 갱신 안 된 행 정리
 - 기록: `car_sync_log` 테이블 (건수·오류)
 - 환경변수(선택): `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` — 기본값이 코드에 들어 있음
 
-주차장·정비업체·검사소는 공공데이터포털 각 데이터 페이지의 **"오픈 API" 탭**에서 활용신청해야 적재됩니다
-(기본으로 열리는 "파일데이터" 탭에는 신청 버튼이 없습니다).
+주차장·정비업체·검사소는 표준데이터 상세 페이지의 다운로드 버튼이 쓰는 JSON
+(`/download/columList.json` → `/download/standard.json`)을 그대로 받으므로 인증키·활용신청이 필요 없습니다.
 
 `npm run data:mock` 은 로컬 개발용 가짜 데이터(`public/data`, git 제외)를 만들고, `MOCK_DATA=1` 일 때만 이 파일을 읽습니다.
 

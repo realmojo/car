@@ -1,14 +1,14 @@
 /**
  * 차곳간 공공데이터 → Supabase car_* 테이블 적재.
  *
- * POST { action: "sync", dataset, page?, url? }
- *   - parking / repair / inspection : 표준데이터 OpenAPI 한 페이지(1,000건) upsert
+ * POST { action: "sync", dataset, page? }
+ *   - parking / repair / inspection : 공공데이터포털 표준데이터 "전체 다운로드"와 같은 JSON 을 한 페이지(10,000건)씩 upsert.
+ *                                     인증키·활용신청이 필요 없다.
  *   - rest                          : 한국도로공사 휴게시설 API 전체
  *   - hydrogen / recall / efficiency: 공공데이터포털 파일 다운로드(CSV) 전체, 사라진 행은 삭제
- * POST { action: "probe", dataset }               공공데이터포털 상세 페이지에서 요청 주소를 찾는다
  * 헤더 x-sync-token 이 Vault 의 car_sync_token 과 같아야 한다.
  *
- * 인증키는 Vault(car_data_go_kr_key)에 있고 service_role 전용 함수 car_sync_config() 로 읽는다.
+ * 도로공사 인증키는 Vault(car_ex_key)에 있고 service_role 전용 함수 car_sync_config() 로 읽는다.
  * DB 에서 pg_net 으로 페이지별로 호출한다 (README 참고).
  */
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -39,26 +39,20 @@ const FILE_PAGES: Record<FileDataset, string> = {
 
 const REST_URL = "https://data.ex.co.kr/openapi/restinfo/hiwaySvarInfoList";
 
-/** 공공데이터포털 표준데이터 상세 페이지 (요청 주소를 찾을 때 쓴다) */
-const PORTAL_PAGES: Record<PagedDataset, string> = {
-  parking: "https://www.data.go.kr/data/15012896/standard.do",
-  repair: "https://www.data.go.kr/data/15028204/standard.do",
-  inspection: "https://www.data.go.kr/data/15021107/standard.do",
+/** 공공데이터포털 표준데이터 번호. 상세 페이지의 다운로드 버튼이 쓰는 JSON 을 그대로 부른다 */
+const STANDARD_PK: Record<PagedDataset, string> = {
+  parking: "15012896",
+  repair: "15028204",
+  inspection: "15021107",
 };
 
-const DEFAULT_URLS: Record<PagedDataset, string> = {
-  parking: "https://api.data.go.kr/openapi/tn_pubr_prkplce_info_api",
-  repair: "https://api.data.go.kr/openapi/tn_pubr_public_auto_maintenance_company_api",
-  inspection: "https://api.data.go.kr/openapi/tn_pubr_public_car_inspofc_api",
-};
-
-const PER_PAGE = 1000;
+const PER_PAGE = 10000;
 
 const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
   auth: { persistSession: false },
 });
 
-let config: { data_go_kr_key: string; sync_token: string; ex_key: string } | null = null;
+let config: { sync_token: string; ex_key: string } | null = null;
 async function loadConfig() {
   if (config) return config;
   const { data, error } = await supabase.rpc("car_sync_config");
@@ -71,30 +65,39 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 }
 
-async function fetchPage(url: string, key: string, page: number) {
-  const u = `${url}?serviceKey=${key.includes("%") ? key : encodeURIComponent(key)}&pageNo=${page}&numOfRows=${PER_PAGE}&type=json`;
-  const res = await fetch(u, { signal: AbortSignal.timeout(60000) });
+interface StandardHeader {
+  totalCount: number;
+  tableVO: { svcTableNm: string; colNmList: string[] };
+  columList: Array<{ columNm: string; columCode: string }>;
+}
+
+async function getJson<T>(url: string): Promise<T> {
+  const res = await fetch(url, { signal: AbortSignal.timeout(60000), headers: { accept: "application/json" } });
   const text = await res.text();
-  let body: unknown;
+  if (!res.ok) throw new Error(`공공데이터포털 응답 오류 (${res.status}): ${text.replace(/\s+/g, " ").slice(0, 200)}`);
   try {
-    body = JSON.parse(text);
+    return JSON.parse(text) as T;
   } catch {
-    throw new Error(`JSON 이 아닌 응답 (${res.status}): ${text.slice(0, 200)}`);
+    throw new Error(`JSON 이 아닌 응답: ${text.replace(/\s+/g, " ").slice(0, 200)}`);
   }
-  // 인증 실패(미등록 키, 활용신청 안 됨 등)는 OpenAPI_ServiceResponse 로 온다
-  const auth = (body as { OpenAPI_ServiceResponse?: { cmmMsgHeader?: { errMsg?: string; returnAuthMsg?: string } } })
-    .OpenAPI_ServiceResponse?.cmmMsgHeader;
-  if (auth || !res.ok) {
-    throw new Error(`인증 오류 (${res.status}): ${auth?.returnAuthMsg ?? auth?.errMsg ?? text.slice(0, 200)}`);
-  }
-  const header = (body as { response?: { header?: { resultCode?: string; resultMsg?: string } } }).response?.header;
-  if (header?.resultCode && header.resultCode !== "00") {
-    // 03 = 데이터 없음 (마지막 페이지 다음)
-    if (header.resultCode === "03") return { rows: [], total: 0 };
-    throw new Error(`API 오류 ${header.resultCode}: ${header.resultMsg}`);
-  }
-  const total = Number((body as { response?: { body?: { totalCount?: string | number } } }).response?.body?.totalCount ?? 0);
-  return { rows: findArray(body), total };
+}
+
+/** 한 페이지를 받아 열 코드(RDNMADR 등)를 한글 열 이름(소재지도로명주소 등)으로 바꾼다. 매퍼는 한글 이름을 읽는다 */
+async function fetchPage(dataset: PagedDataset, page: number) {
+  const pk = STANDARD_PK[dataset];
+  const header = await getJson<StandardHeader>(`https://www.data.go.kr/download/columList.json?pk=${pk}&ext=CSV`);
+  const q = new URLSearchParams({
+    publicDataPk: pk,
+    svcTableNm: header.tableVO.svcTableNm,
+    totalCount: String(header.totalCount),
+    perPage: String(PER_PAGE),
+    page: String(page),
+  });
+  for (const c of header.tableVO.colNmList) q.append("colNmList", c);
+  const items = await getJson<Raw[]>(`https://www.data.go.kr/download/standard.json?${q}`);
+  const names = new Map(header.columList.map((c) => [c.columCode, c.columNm]));
+  const rows = items.map((item) => Object.fromEntries(Object.entries(item).map(([k, v]) => [names.get(k) ?? k, v])));
+  return { rows, total: Number(header.totalCount) || 0 };
 }
 
 function toRecords(dataset: Dataset, rows: Raw[]) {
@@ -136,8 +139,8 @@ async function log(dataset: Dataset, page: number | null, fetched: number, saved
   await supabase.from("car_sync_log").insert({ dataset, page, fetched, saved, total });
 }
 
-async function syncPaged(dataset: PagedDataset, page: number, url: string, key: string) {
-  const { rows, total } = await fetchPage(url, key, page);
+async function syncPaged(dataset: PagedDataset, page: number) {
+  const { rows, total } = await fetchPage(dataset, page);
   const records = toRecords(dataset, rows);
   await upsert(dataset, records);
   await log(dataset, page, rows.length, records.length, total);
@@ -192,20 +195,13 @@ async function syncFile(dataset: FileDataset) {
   return replaceAll(dataset, rows, url);
 }
 
-async function probe(dataset: PagedDataset) {
-  const res = await fetch(PORTAL_PAGES[dataset], { signal: AbortSignal.timeout(30000) });
-  const html = await res.text();
-  const urls = [...new Set(html.match(/https?:\/\/api\.data\.go\.kr\/openapi\/[a-z0-9_]+/gi) ?? [])];
-  return { dataset, status: res.status, urls };
-}
-
 Deno.serve(async (req) => {
   let dataset: string | undefined;
   let page: number | undefined;
   try {
     const cfg = await loadConfig();
     if (req.headers.get("x-sync-token") !== cfg.sync_token) return json({ error: "unauthorized" }, 401);
-    const body = (await req.json().catch(() => ({}))) as { action?: string; dataset?: Dataset; page?: number; url?: string };
+    const body = (await req.json().catch(() => ({}))) as { action?: string; dataset?: Dataset; page?: number };
     dataset = body.dataset;
     page = Math.max(1, Number(body.page) || 1);
     const ds = body.dataset;
@@ -214,9 +210,7 @@ Deno.serve(async (req) => {
     if (ds === "rest") return json(await syncRest(cfg.ex_key));
     if (ds === "hydrogen" || ds === "recall" || ds === "efficiency") return json(await syncFile(ds));
 
-    if (body.action === "probe") return json(await probe(ds));
-    const url = body.url || DEFAULT_URLS[ds];
-    return json(await syncPaged(ds, page, url, cfg.data_go_kr_key));
+    return json(await syncPaged(ds, page));
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     await supabase.from("car_sync_log").insert({ dataset: dataset ?? "unknown", page: page ?? null, error: message }).then(() => {}, () => {});

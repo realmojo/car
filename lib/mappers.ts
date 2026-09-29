@@ -75,6 +75,25 @@ const LAT = ["latitude", "위도", "lat", "yValue"];
 const LNG = ["longitude", "경도", "lng", "lon", "xValue"];
 const TEL = ["phoneNumber", "전화번호", "대표전화", "연락처", "rprsTelNo"];
 
+const REPAIR_KINDS: Record<string, string> = { "1": "종합정비업", "2": "소형정비업", "3": "전문정비업", "4": "원동기전문정비업" };
+const REPAIR_STATUS: Record<string, string> = { "1": "영업", "2": "휴업", "3": "폐업" };
+
+/** "03" 같은 코드는 이름으로 바꾸고, 이미 글자면 그대로 둔다 */
+function code(v: string, names: Record<string, string>) {
+  return /^\d+$/.test(v) ? (names[String(Number(v))] ?? v) : v;
+}
+
+/** 검사소 표준데이터의 검사 종류별 Y/N 열 */
+const INSPECTION_KINDS: Array<[string, string]> = [
+  ["신규검사여부", "신규"],
+  ["정기검사여부", "정기"],
+  ["튜닝검사여부", "튜닝"],
+  ["임시검사여부", "임시"],
+  ["수리검사여부", "수리"],
+  ["배출가스정밀검사여부", "배출가스 정밀"],
+  ["택시미터검정여부", "택시미터 검정"],
+];
+
 export type Mapper = (row: Raw) => Row | null;
 
 export const MAPPERS: Record<DatasetId, Mapper> = {
@@ -134,13 +153,14 @@ export const MAPPERS: Record<DatasetId, Mapper> = {
     const name = pick(r, ["자동차정비업체명", "정비업체명", "업체명", "사업장명", "mntnceEntrpsNm", "bplcNm", "entrpsNm"]);
     const address = pick(r, ADDR) || pick(r, JIBUN);
     if (!name || !address) return null;
-    const status = pick(r, ["영업상태", "영업상태명", "bsnSttus"]);
+    // 표준데이터는 코드로 온다: 영업상태 1 영업 · 2 휴업 · 3 폐업, 업체종류 1 종합 · 2 소형 · 3 부분(전문) · 4 원동기
+    const status = code(pick(r, ["영업상태", "영업상태명", "bsnSttus"]), REPAIR_STATUS);
     if (/폐업|취소|말소/.test(status)) return null;
-    const kind = pick(r, ["자동차정비업체종류", "정비업체종류", "업종", "업태", "mntnceEntrpsSe"]);
+    const kind = code(pick(r, ["자동차정비업체종류", "정비업체종류", "업종", "업태", "mntnceEntrpsSe"]), REPAIR_KINDS);
     const flags: string[] = [];
     if (kind.includes("종합")) flags.push("general");
     if (kind.includes("소형")) flags.push("small");
-    if (kind.includes("부분") || kind.includes("전문")) flags.push("partial");
+    if (kind.includes("부분") || (kind.includes("전문") && !kind.includes("원동기"))) flags.push("partial");
     if (kind.includes("원동기")) flags.push("motor");
     const hours = range(pick(r, ["운영시작시각", "operOpenHm"]), pick(r, ["운영종료시각", "operCloseHm"]));
     return {
@@ -171,13 +191,15 @@ export const MAPPERS: Record<DatasetId, Mapper> = {
     const name = pick(r, ["자동차검사소명", "검사소명", "inspofcNm"]);
     const address = pick(r, ADDR) || pick(r, JIBUN);
     if (!name || !address) return null;
-    const kind = pick(r, ["자동차검사소구분", "검사소구분", "검사소유형", "지정구분", "inspofcSe"]);
+    const kind = pick(r, ["자동차검사소유형", "자동차검사소구분", "검사소구분", "검사소유형", "지정구분", "inspofcSe"]);
     const tel = pick(r, ["검사소전화번호", ...TEL]);
+    // 표준데이터 운영시간은 "평일:09:00~18:00+토요일:09:00~13:00+공휴일 휴무" 형식
     const hours =
-      pick(r, ["운영시간", "평일운영시간"]) ||
+      pick(r, ["운영시간", "평일운영시간"]).replace(/\s*\+\s*/g, ", ") ||
       range(pick(r, ["평일운영시작시각", "운영시작시각"]), pick(r, ["평일운영종료시각", "운영종료시각"]));
     const flags: string[] = [];
-    if (kind.includes("공단") || name.includes("교통안전공단")) flags.push("ts");
+    // 유형이 "공공"(한국교통안전공단 검사소)이거나 이름에 공단이 들어가면 공단 직영
+    if (/공단|공공/.test(kind) || name.includes("교통안전공단")) flags.push("ts");
     else flags.push("private");
     return {
       key: fnv(name + address),
@@ -187,14 +209,15 @@ export const MAPPERS: Record<DatasetId, Mapper> = {
       tel,
       ...coords(r, LAT, LNG),
       ...locate(address),
-      tags: [kind, flags.includes("ts") ? "공단 직영" : "민간 지정"].filter((t, i, a) => t && a.indexOf(t) === i),
+      // 유형이 "민간"·"공공" 뿐이면 뒤의 뱃지와 겹치므로 뺀다
+      tags: [/^(민간|공단|공공)$/.test(kind) ? "" : kind, flags.includes("ts") ? "공단 직영" : "민간 지정"].filter(Boolean),
       flags,
       info: info([
         ["구분", kind],
         ["도로명 주소", address],
         ["지번 주소", pick(r, JIBUN)],
         ["운영 시간", hours],
-        ["검사 종류", pick(r, ["검사종류", "검사가능종류", "검사업무"])],
+        ["검사 종류", pick(r, ["검사종류", "검사가능종류", "검사업무"]) || INSPECTION_KINDS.filter(([col]) => pick(r, [col]) === "Y").map(([, label]) => label).join(", ")],
         ["검사 차종", pick(r, ["검사가능차종", "검사차종"])],
         ["전화", tel],
         ["관리기관", pick(r, ["관리기관명", "institutionNm"])],
