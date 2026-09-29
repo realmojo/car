@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { findSido, findSigungu } from "@/lib/codes";
-import { findRow } from "@/lib/datasets";
+import { findPlace } from "@/lib/places";
 import { buildMetadata } from "@/lib/seo";
 import { withQuery } from "@/lib/url";
 import Crumbs from "@/components/common/Crumbs";
@@ -14,7 +14,7 @@ type Params = { id: string };
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { id } = await params;
-  const found = await findRow("parking", id);
+  const found = await findPlace("parking", id);
   if (!found) return {};
   const { row } = found;
   const fee = row.info.find(([k]) => k === "기본 요금")?.[1] ?? row.tags[0] ?? "";
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
 export default async function ParkingDetailPage({ params }: { params: Promise<Params> }) {
   const { id } = await params;
-  const found = await findRow("parking", id);
+  const found = await findPlace("parking", id);
   if (!found) notFound();
   const { row, sido } = found;
   const sidoInfo = findSido(sido ?? "");

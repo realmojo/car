@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { findSido, findSigungu } from "@/lib/codes";
-import { findRow, type DatasetId, type Row } from "@/lib/datasets";
+import { findRow, type Row } from "@/lib/datasets";
+import { findPlace } from "@/lib/places";
 import { buildMetadata } from "@/lib/seo";
 import { withQuery } from "@/lib/url";
 import Crumbs from "@/components/common/Crumbs";
@@ -23,7 +24,9 @@ async function resolve(id: string) {
   const m = id.match(/^(shop|insp|recall)-(.+)$/);
   if (!m) return null;
   const kind = KINDS[m[1] as keyof typeof KINDS];
-  const found = await findRow(kind.dataset as DatasetId, m[2]);
+  // 정비소·검사소는 Supabase, 리콜은 동기화 파일
+  const found =
+    kind.dataset === "recall" ? await findRow("recall", m[2]) : await findPlace(kind.dataset, m[2]);
   return found ? { kind, ...found } : null;
 }
 

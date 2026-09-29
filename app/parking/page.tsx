@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { findSido, findSigungu } from "@/lib/codes";
-import { filterRows, loadRows, paginate, rowId } from "@/lib/datasets";
+import { rowId } from "@/lib/datasets";
+import { queryPlaces } from "@/lib/places";
+import { attempt } from "@/lib/errors";
 import { buildMetadata } from "@/lib/seo";
 import { one, withQuery, type SearchParams } from "@/lib/url";
 import Crumbs from "@/components/common/Crumbs";
@@ -8,7 +10,7 @@ import Tabs from "@/components/common/Tabs";
 import RegionForm from "@/components/common/RegionForm";
 import RowList from "@/components/common/RowList";
 import Pager from "@/components/common/Pager";
-import { PendingNotice, SOURCES, SourceNote } from "@/components/common/Notice";
+import { ErrorNotice, PendingNotice, SOURCES, SourceNote } from "@/components/common/Notice";
 
 export const dynamic = "force-dynamic";
 
@@ -34,14 +36,19 @@ export default async function ParkingPage({ searchParams }: { searchParams: Sear
   const f = FILTERS.some((x) => x.key === one(sp.f)) ? one(sp.f) : "";
   const sort = one(sp.sort) === "capacity" ? "capacity" : "";
 
-  const rows = await loadRows("parking", sido);
+  const { data: p, error } = await attempt(
+    queryPlaces("parking", {
+      sido,
+      gu,
+      q,
+      flags: f ? [f] : [],
+      sort: sort ? "capacity" : undefined,
+      page: Number(one(sp.page)),
+    }),
+  );
   const sidoInfo = findSido(sido)!;
   const guInfo = gu ? findSigungu(sido, gu) : undefined;
   const area = `${sidoInfo.short}${guInfo ? ` ${guInfo.name}` : ""}`;
-
-  let filtered = rows ? filterRows(rows, { gu, q, flags: f ? [f] : [] }) : [];
-  if (sort === "capacity") filtered = [...filtered].sort((a, b) => (b.num?.capacity ?? 0) - (a.num?.capacity ?? 0));
-  const p = paginate(filtered, Number(one(sp.page)));
   const base = { sido, gu, q };
 
   return (
@@ -62,7 +69,9 @@ export default async function ParkingPage({ searchParams }: { searchParams: Sear
         }))}
       />
 
-      {!rows ? (
+      {error ? (
+        <ErrorNotice message={error} />
+      ) : !p ? (
         <PendingNotice />
       ) : (
         <>

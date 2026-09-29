@@ -19,6 +19,20 @@ UI 는 keywordegg.com 의 콘텐츠 스킨(다크 셸 + 아이보리 카드, 올
 
 지역은 모든 목록에서 `?sido=<슬러그>&gu=<시군구코드>&q=<검색어>&page=` 로 거릅니다.
 
+## Supabase (주차장·정비업체·검사소)
+
+주차장·정비업체·검사소는 행 수가 많아 Supabase `pflow-kr` 프로젝트의 `car_parking`, `car_repair`, `car_inspection`
+테이블에 둡니다. 공개 읽기 전용(RLS)이라 사이트는 publishable 키로 읽습니다 (`lib/places.ts`).
+
+- 적재: Edge Function `car-sync` (`supabase/functions/car-sync`)가 공공데이터 표준데이터 API 를 1,000건씩 받아 upsert
+- 인증키: Supabase Vault `car_data_go_kr_key` (Edge Function 이 service_role 전용 `car_sync_config()` 로 읽음)
+- 실행: `select public.car_sync_dataset('parking');` (repair / inspection 동일) — 페이지별로 pg_net 호출
+- 자동 갱신: pg_cron 매월 1일 새벽(한국시간) 전체 재적재, 15일에 45일 넘게 갱신 안 된 행 정리
+- 기록: `car_sync_log` 테이블 (페이지별 건수·오류)
+- 환경변수(선택): `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` — 기본값이 코드에 들어 있음
+
+필요한 공공데이터포털 활용신청: 전국주차장정보표준데이터, 전국자동차정비업체표준데이터, 전국자동차검사소표준데이터.
+
 ## 데이터 두 종류
 
 **실시간 API** (요청 시 호출, `lib/cache.ts` 로 5~10분 캐시)

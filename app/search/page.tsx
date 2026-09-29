@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { findSido } from "@/lib/codes";
 import { filterRows, loadRows, rowId, type DatasetId, type Row } from "@/lib/datasets";
+import { queryPlaces, type PlaceDataset } from "@/lib/places";
+import { attempt } from "@/lib/errors";
 import { buildMetadata } from "@/lib/seo";
 import { one, withQuery, type SearchParams } from "@/lib/url";
 import Crumbs from "@/components/common/Crumbs";
@@ -78,14 +80,19 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   const results = ready
     ? await Promise.all(
         GROUPS.map(async (g) => {
-          const rows = await loadRows(g.dataset, g.regional ? sido : undefined);
-          const scoped = rows ? (g.regional ? rows : rows.filter((r) => !r.sido || r.sido === sido || g.dataset === "rest")) : [];
+          if (g.regional) {
+            // 주차장·정비소·검사소는 Supabase 에서 앞의 몇 건과 전체 건수만 가져온다
+            const { data } = await attempt(queryPlaces(g.dataset as PlaceDataset, { sido, q, size: LIMIT }));
+            return { g, hits: data?.items ?? [], count: data?.total ?? 0, missing: !data };
+          }
+          const rows = await loadRows(g.dataset);
+          const scoped = rows ? rows.filter((r) => !r.sido || r.sido === sido || g.dataset === "rest") : [];
           const hits = filterRows(scoped, { q });
-          return { g, hits, missing: !rows };
+          return { g, hits, count: hits.length, missing: !rows };
         }),
       )
     : [];
-  const total = results.reduce((a, r) => a + r.hits.length, 0);
+  const total = results.reduce((a, r) => a + r.count, 0);
   const sidoInfo = findSido(sido)!;
 
   return (
@@ -104,14 +111,14 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
           <p className="result-count">
             {sidoInfo.short}에서 ‘{q}’ 검색 결과 {total.toLocaleString()}건
           </p>
-          {results.map(({ g, hits, missing }) =>
+          {results.map(({ g, hits, count, missing }) =>
             missing || hits.length === 0 ? null : (
               <section key={g.dataset} className="sec" style={{ marginTop: 24 }}>
                 <div className="sec-head">
                   <h2 className="sec-title">
-                    {g.icon} {g.label} <span className="muted" style={{ fontSize: 14 }}>{hits.length.toLocaleString()}건</span>
+                    {g.icon} {g.label} <span className="muted" style={{ fontSize: 14 }}>{count.toLocaleString()}건</span>
                   </h2>
-                  {hits.length > LIMIT && (
+                  {count > LIMIT && (
                     <a target="_self" href={g.more(sido, q)} className="sec-more">
                       전체 보기
                     </a>

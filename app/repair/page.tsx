@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { findSido, findSigungu } from "@/lib/codes";
-import { filterRows, loadRows, paginate, rowId, type Row } from "@/lib/datasets";
+import { loadRows, paginate, rowId, type Row } from "@/lib/datasets";
+import { queryPlaces } from "@/lib/places";
+import { attempt } from "@/lib/errors";
 import { buildMetadata } from "@/lib/seo";
 import { one, withQuery, type SearchParams } from "@/lib/url";
 import Crumbs from "@/components/common/Crumbs";
@@ -8,7 +10,7 @@ import Tabs from "@/components/common/Tabs";
 import RegionForm from "@/components/common/RegionForm";
 import RowList from "@/components/common/RowList";
 import Pager from "@/components/common/Pager";
-import { PendingNotice, SOURCES, SourceNote } from "@/components/common/Notice";
+import { ErrorNotice, PendingNotice, SOURCES, SourceNote } from "@/components/common/Notice";
 
 export const dynamic = "force-dynamic";
 
@@ -85,8 +87,7 @@ async function PlaceSection({
   const sido = findSido(one(sp.sido)) ? one(sp.sido) : "seoul";
   const gu = findSigungu(sido, one(sp.gu)) ? one(sp.gu) : "";
   const f = filters.some((x) => x.key === one(sp.f)) ? one(sp.f) : "";
-  const rows = await loadRows(dataset, sido);
-  const p = paginate(rows ? filterRows(rows, { gu, q, flags: f ? [f] : [] }) : [], page);
+  const { data: p, error } = await attempt(queryPlaces(dataset, { sido, gu, q, flags: f ? [f] : [], page }));
   const base = { type, sido, gu, q };
   const prefix = type === "shop" ? "shop" : "insp";
 
@@ -104,7 +105,9 @@ async function PlaceSection({
         label="업체 종류"
         items={filters.map((x) => ({ label: x.label, href: withQuery("/repair", { ...base, f: x.key }), active: x.key === f }))}
       />
-      {!rows ? (
+      {error ? (
+        <ErrorNotice message={error} />
+      ) : !p ? (
         <PendingNotice />
       ) : (
         <>

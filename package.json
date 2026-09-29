@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node --no-warnings --experimental-strip-types scripts/sync-data.ts --soft && next build",
+    "build": "node --no-warnings --experimental-strip-types scripts/sync-data.ts --soft hydrogen rest recall efficiency && next build",
     "start": "next start",
     "lint": "eslint",
     "data:sync": "node --no-warnings --experimental-strip-types scripts/sync-data.ts",
