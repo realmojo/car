@@ -210,7 +210,7 @@ export const MAPPERS: Record<DatasetId, Mapper> = {
       .join(" ");
     if (!name || !address) return null;
     const supply = pick(r, ["공급방식", "충전방식"]);
-    const chargers = pick(r, ["충전기수", "충전기 수", "충전기대수"]);
+    const chargers = pick(r, ["충전기수", "충전기 수", "충전기대수", "충전기 대수", "충전기수량"]);
     const vehicles = pick(r, ["충전가능차량", "충전가능차종", "충전가능차량코드"]);
     const flags: string[] = [];
     if (/버스|대형|상용/.test(vehicles)) flags.push("bus");
@@ -234,6 +234,8 @@ export const MAPPERS: Record<DatasetId, Mapper> = {
         ["휴무", pick(r, ["휴식일정", "휴무일", "휴무"])],
         ["전화", pick(r, TEL)],
         ["운영사", pick(r, ["운영사", "운영기관", "사업자"])],
+        ["용도", pick(r, ["용도"])],
+        ["구축 연도", pick(r, ["구축연도", "설치연도", "준공연도"])],
         ["기준일", pick(r, ["데이터기준일자", "기준일자"])],
       ]),
     };
@@ -242,6 +244,8 @@ export const MAPPERS: Record<DatasetId, Mapper> = {
   rest(r) {
     const name = pick(r, ["svarNm", "휴게소명", "시설명"]);
     if (!name) return null;
+    // 휴게시설 목록에 같은 자리의 주유소·충전소가 따로 들어 있다. 주유 정보는 다루지 않으므로 뺀다
+    if (/주유소|LPG|충전소/.test(name) && !/휴게소|쉼터/.test(name)) return null;
     const route = pick(r, ["routeNm", "노선명"]);
     const dir = pick(r, ["gudClssNm", "방향", "상하행구분", "방향구분"]);
     const address = pick(r, ADDR);
@@ -303,15 +307,17 @@ export const MAPPERS: Record<DatasetId, Mapper> = {
   efficiency(r) {
     const name = pick(r, ["모델명", "차명", "모델"]);
     if (!name) return null;
-    const maker = pick(r, ["업체명", "제조사", "제작사", "제조업체"]);
+    const maker = pick(r, ["업체명", "제조(수입사)", "제조사", "제작사", "제조업체"]);
     const fuel = pick(r, ["연료", "유종", "사용연료", "연료종류"]);
     const type = pick(r, ["차종", "차급", "차량구분"]);
-    const combined = num(pick(r, ["복합연비", "복합", "복합에너지소비효율"]));
-    const city = num(pick(r, ["도심연비", "도심"]));
-    const highway = num(pick(r, ["고속도로연비", "고속도로", "고속"]));
+    const shape = pick(r, ["유형"]);
+    const combined = num(pick(r, ["복합연비", "복합_연비", "복합", "복합에너지소비효율"]));
+    const city = num(pick(r, ["도심연비", "도심_연비", "도심"]));
+    const highway = num(pick(r, ["고속도로연비", "고속도로_연비", "고속도로", "고속"]));
     const rangeKm = num(pick(r, ["1회충전주행거리", "1회충전 주행거리", "주행거리"]));
-    const grade = num(pick(r, ["등급", "연비등급", "에너지소비효율등급"]));
-    const ev = /전기/.test(fuel) && !/하이브리드/.test(fuel);
+    const grade = num(pick(r, ["등급", "연비등급", "에너지소비효율등급"]).replace(/\D/g, ""));
+    // 연료 열이 없는 파일은 1회 충전 주행거리가 있으면 전기차로 본다
+    const ev = fuel ? /전기/.test(fuel) && !/하이브리드/.test(fuel) : Boolean(rangeKm);
     const unit = ev ? "km/kWh" : /수소/.test(fuel) ? "km/kg" : "km/L";
     const flags: string[] = [];
     if (ev) flags.push("ev");
@@ -322,7 +328,7 @@ export const MAPPERS: Record<DatasetId, Mapper> = {
       key: fnv(maker + name + fuel + pick(r, ["배기량", "출시연도", "연식"]) + (combined ?? "")),
       name,
       sub: maker,
-      tags: [fuel, type, grade ? `${grade}등급` : ""].filter(Boolean),
+      tags: [fuel || (ev ? "전기" : ""), type, shape, grade ? `${grade}등급` : ""].filter(Boolean),
       flags,
       num: {
         ...(combined ? { combined } : {}),
@@ -331,8 +337,9 @@ export const MAPPERS: Record<DatasetId, Mapper> = {
       },
       info: info([
         ["제조사", maker],
-        ["연료", fuel],
+        ["연료", fuel || (ev ? "전기" : "")],
         ["차종", type],
+        ["유형", shape],
         ["복합 연비", combined ? `${combined} ${unit}` : ""],
         ["도심 연비", city ? `${city} ${unit}` : ""],
         ["고속도로 연비", highway ? `${highway} ${unit}` : ""],

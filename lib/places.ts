@@ -7,21 +7,11 @@
 import { cached } from "./cache";
 import { filterRows, loadRows, paginate } from "./datasets";
 import type { Row } from "./dataset-types";
+import { COLUMNS, SUPABASE_KEY, SUPABASE_URL, TABLES, isMock as mock, sbSelect } from "./supabase";
 
 export type PlaceDataset = "parking" | "repair" | "inspection";
 
-const TABLES: Record<PlaceDataset, string> = {
-  parking: "car_parking",
-  repair: "car_repair",
-  inspection: "car_inspection",
-};
-
-const SUPABASE_URL = process.env.SUPABASE_URL || "https://mbxdcxlxugsnmljzdlkp.supabase.co";
-const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_LZDtNaj2bmIffIOsqA6x7g_HNPhAjFQ";
-const COLUMNS = "key,sido,gu,name,sub,address,lat,lng,tel,tags,flags,info,num";
 const TTL = 600;
-
-const mock = () => process.env.MOCK_DATA === "1";
 
 export interface PlaceQuery {
   sido?: string;
@@ -40,54 +30,7 @@ export interface PlacePage {
   pages: number;
 }
 
-type DbRow = Omit<Row, "sub" | "address" | "lat" | "lng" | "tel" | "gu" | "sido" | "num"> & {
-  sub: string | null;
-  address: string | null;
-  lat: number | null;
-  lng: number | null;
-  tel: string | null;
-  sido: string | null;
-  gu: string | null;
-  num: Record<string, number> | null;
-};
-
-function toRow(r: DbRow): Row {
-  return {
-    key: r.key,
-    name: r.name,
-    sub: r.sub ?? undefined,
-    address: r.address ?? undefined,
-    lat: r.lat ?? undefined,
-    lng: r.lng ?? undefined,
-    tel: r.tel ?? undefined,
-    sido: r.sido ?? undefined,
-    gu: r.gu ?? undefined,
-    tags: r.tags ?? [],
-    flags: r.flags ?? [],
-    info: r.info ?? [],
-    num: r.num ?? undefined,
-  };
-}
-
-async function rest(table: string, params: URLSearchParams, withCount: boolean) {
-  const url = `${SUPABASE_URL}/rest/v1/${table}?${params}`;
-  return cached(`sb:${url}`, TTL, async () => {
-    const res = await fetch(url, {
-      signal: AbortSignal.timeout(10000),
-      cache: "no-store",
-      headers: {
-        apikey: SUPABASE_KEY,
-        accept: "application/json",
-        ...(withCount ? { prefer: "count=exact" } : {}),
-      },
-    });
-    if (!res.ok) throw new Error(`데이터베이스 오류 (${res.status})`);
-    const rows = (await res.json()) as DbRow[];
-    const range = res.headers.get("content-range") ?? "";
-    const total = Number(range.split("/")[1]) || rows.length;
-    return { rows: rows.map(toRow), total };
-  });
-}
+const rest = (table: string, params: URLSearchParams, withCount: boolean) => sbSelect(table, params, TTL, withCount);
 
 /** 검색어를 PostgREST ilike 조건으로. 쉼표·괄호처럼 문법에 쓰이는 문자는 뺀다 */
 function words(q?: string) {

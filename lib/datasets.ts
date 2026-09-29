@@ -1,12 +1,13 @@
 /**
- * public/data/<dataset>/<shard>.json 을 읽는다.
+ * 휴게소·수소충전소·리콜·연비처럼 행 수가 적은 데이터셋을 읽는다.
  *
- * - Cloudflare: 정적 자산 바인딩(ASSETS)에서 가져온다. 워커 번들에 데이터를 넣지 않기 위해서다.
- * - next dev / next start: 파일 시스템에서 읽는다.
- * 파일이 없으면 null 을 돌려주고, 페이지는 "데이터 준비 중" 안내를 띄운다.
+ * - 운영: Supabase car_* 테이블 전체를 읽어 캐시한다 (lib/supabase.ts).
+ * - MOCK_DATA=1: public/data/<dataset>/<shard>.json (scripts/sync-data.ts --mock 으로 만든 가짜 데이터).
+ * 데이터가 없으면 null 을 돌려주고, 페이지는 "데이터 준비 중" 안내를 띄운다.
  */
-import { SHARDED, type DatasetId, type Row, type Shard, type SyncMeta } from "./dataset-types";
+import { SHARDED, type DatasetId, type Row, type Shard } from "./dataset-types";
 import { findSido } from "./codes";
+import { TABLES, isMock, sbAll, sbSelect } from "./supabase";
 
 export type { DatasetId, Row } from "./dataset-types";
 
@@ -58,16 +59,31 @@ export async function loadShard(dataset: DatasetId, shard: string): Promise<Shar
   return readJson<Shard>(`data/${dataset}/${shard}.json`);
 }
 
-/** 시도 단위 데이터셋은 sido 를, 단일 파일 데이터셋은 all 을 읽는다 */
+/**
+ * 데이터셋 전체 행. 시도 단위 데이터셋(주차장·정비·검사소)은 가짜 데이터에서만 쓰고,
+ * 운영에서는 lib/places.ts 가 Supabase 에 조건을 걸어 직접 조회한다.
+ */
 export async function loadRows(dataset: DatasetId, sido?: string): Promise<Row[] | null> {
+  if (!isMock()) {
+    if (SHARDED[dataset]) return null;
+    try {
+      const rows = await sbAll(dataset);
+      return rows.length ? rows : null;
+    } catch {
+      return null;
+    }
+  }
   const shard = SHARDED[dataset] ? sido : "all";
   if (!shard || (SHARDED[dataset] && !findSido(shard))) return null;
   const data = await loadShard(dataset, shard);
   return data?.items ?? null;
 }
 
-export async function loadMeta(): Promise<SyncMeta | null> {
-  return readJson<SyncMeta>("data/meta.json");
+/** 데이터셋 전체 건수 (홈 요약) */
+export async function countRows(dataset: DatasetId): Promise<number> {
+  if (isMock()) return (await loadRows(dataset))?.length ?? 0;
+  const { total } = await sbSelect(TABLES[dataset], new URLSearchParams({ select: "key", limit: "1" }), 600, true);
+  return total;
 }
 
 /**

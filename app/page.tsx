@@ -1,5 +1,5 @@
 import { NAV } from "@/lib/menu";
-import { loadMeta, loadRows } from "@/lib/datasets";
+import { countRows, loadRows } from "@/lib/datasets";
 import { countPlaces } from "@/lib/places";
 import { getRoadEvents, eventGroup } from "@/lib/its";
 import { attempt } from "@/lib/errors";
@@ -36,8 +36,8 @@ const FAQ = [
 ];
 
 export default async function HomePage() {
-  const [meta, events, recalls, parking, repair, inspection] = await Promise.all([
-    loadMeta(),
+  const [hydrogen, events, recalls, parking, repair, inspection] = await Promise.all([
+    attempt(countRows("hydrogen")),
     attempt(getRoadEvents()),
     loadRows("recall"),
     attempt(countPlaces("parking")),
@@ -45,7 +45,7 @@ export default async function HomePage() {
     attempt(countPlaces("inspection")),
   ]);
   const c = {
-    ...meta?.counts,
+    hydrogen: hydrogen.data ?? 0,
     parking: parking.data ?? 0,
     repair: repair.data ?? 0,
     inspection: inspection.data ?? 0,
@@ -96,7 +96,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {(c.parking > 0 || c.repair > 0 || c.inspection > 0) && (
+      {(c.parking > 0 || c.repair > 0 || c.inspection > 0 || c.hydrogen > 0) && (
         <section className="sec">
           <div className="sec-head">
             <h2 className="sec-title">한눈에 보는 데이터</h2>

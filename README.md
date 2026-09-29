@@ -10,52 +10,47 @@ UI 는 keywordegg.com 의 콘텐츠 스킨(다크 셸 + 아이보리 카드, 올
 
 | 1depth | 하위 분류 (쿼리) | 2depth 상세 | 데이터 |
 |---|---|---|---|
-| `/charge` | `?type=ev` 전기차 · `?type=h2` 수소 | `/charge/ev-<zscode>-<statId>`, `/charge/h2-<key>` | 환경공단 API (실시간), 가스안전공사 (동기화) |
-| `/parking` | `?f=public` 공영 · `?f=free` 무료 | `/parking/<sido>-<key>` | 전국주차장정보표준데이터 (동기화) |
-| `/repair` | `?type=shop` 정비소 · `inspection` 검사소 · `recall` 리콜 | `/repair/shop-…`, `/repair/insp-…`, `/repair/recall-<key>` | 정비업체·검사소 표준데이터, 리콜현황 (동기화) |
-| `/road` | `?type=event` 돌발상황 · `cctv` CCTV · `caution` 주의운전구간 · `rest` 휴게소 | `/road/cctv-<ex\|its>-<id>`, `/road/rest-<key>` | ITS 돌발상황·CCTV·재난·주의운전구간 (실시간), 도로공사 휴게시설 (동기화) |
-| `/guide` | - | `/guide/<slug>` (연비 순위, 전기차 주행거리, 계산기, 충전 규격, 검사 주기) | 에너지공단 표시연비 (동기화) |
-| `/search` | `?q=&sido=` | - | 동기화 데이터 전체 |
+| `/charge` | `?type=ev` 전기차 · `?type=h2` 수소 | `/charge/ev-<zscode>-<statId>`, `/charge/h2-<key>` | 환경공단 API (실시간), 가스안전공사 (DB) |
+| `/parking` | `?f=public` 공영 · `?f=free` 무료 | `/parking/<sido>-<key>` | 전국주차장정보표준데이터 (DB) |
+| `/repair` | `?type=shop` 정비소 · `inspection` 검사소 · `recall` 리콜 | `/repair/shop-…`, `/repair/insp-…`, `/repair/recall-<key>` | 정비업체·검사소 표준데이터, 리콜현황 (DB) |
+| `/road` | `?type=event` 돌발상황 · `cctv` CCTV · `caution` 주의운전구간 · `rest` 휴게소 | `/road/cctv-<ex\|its>-<id>`, `/road/rest-<key>` | ITS 돌발상황·CCTV·재난·주의운전구간 (실시간), 도로공사 휴게시설 (DB) |
+| `/guide` | - | `/guide/<slug>` (연비 순위, 전기차 주행거리, 계산기, 충전 규격, 검사 주기) | 에너지공단 표시연비 (DB) |
+| `/search` | `?q=&sido=` | - | DB 데이터 전체 |
 
 지역은 모든 목록에서 `?sido=<슬러그>&gu=<시군구코드>&q=<검색어>&page=` 로 거릅니다.
 
-## Supabase (주차장·정비업체·검사소)
-
-주차장·정비업체·검사소는 행 수가 많아 Supabase `pflow-kr` 프로젝트의 `car_parking`, `car_repair`, `car_inspection`
-테이블에 둡니다. 공개 읽기 전용(RLS)이라 사이트는 publishable 키로 읽습니다 (`lib/places.ts`).
-
-- 적재: Edge Function `car-sync` (`supabase/functions/car-sync`)가 공공데이터 표준데이터 API 를 1,000건씩 받아 upsert
-- 인증키: Supabase Vault `car_data_go_kr_key` (Edge Function 이 service_role 전용 `car_sync_config()` 로 읽음)
-- 실행: `select public.car_sync_dataset('parking');` (repair / inspection 동일) — 페이지별로 pg_net 호출
-- 자동 갱신: pg_cron 매월 1일 새벽(한국시간) 전체 재적재, 15일에 45일 넘게 갱신 안 된 행 정리
-- 기록: `car_sync_log` 테이블 (페이지별 건수·오류)
-- 환경변수(선택): `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` — 기본값이 코드에 들어 있음
-
-필요한 공공데이터포털 활용신청: 전국주차장정보표준데이터, 전국자동차정비업체표준데이터, 전국자동차검사소표준데이터.
-
-## 데이터 두 종류
+## 데이터
 
 **실시간 API** (요청 시 호출, `lib/cache.ts` 로 5~10분 캐시)
 - 한국환경공단 전기자동차 충전소 정보 → `DATA_GO_KR_SERVICE_KEY`
 - 국가교통정보센터 돌발상황정보, CCTV 화상자료 → `ITS_API_KEY` (ITS 사이트에서 서비스별 이용 신청 필요, 서비스당 하루 1,000건)
 - 선택: 재난상황정보(`ITS_DISASTER_URL`), 주의운전구간(`ITS_CAUTION_URL`) — ITS 오픈데이터 상세 페이지의 요청 주소를 넣으면 켜집니다
 
-**동기화 데이터** (월 단위로 바뀌는 목록형 데이터)
-`npm run data:sync` 가 원본을 받아 공통 형식으로 바꾼 뒤 `public/data/<데이터셋>/<시도>.json` 으로 나눠 저장합니다.
-Workers 의 서브요청 제한과 일일 호출 한도를 피하고, 페이지는 정적 자산만 읽어 빠릅니다.
+**DB 데이터** (월 단위로 바뀌는 목록형 데이터) — Supabase `pflow-kr` 프로젝트의 `car_*` 테이블.
+공개 읽기 전용(RLS)이라 사이트는 publishable 키로 PostgREST 를 읽습니다 (`lib/supabase.ts`, `lib/places.ts`, `lib/datasets.ts`).
+배포 파일에는 데이터가 들어가지 않습니다.
 
-| 데이터셋 | 원본 | 가져오는 방법 |
+| 테이블 | 원본 | 적재 방식 |
 |---|---|---|
-| parking | 전국주차장정보표준데이터 | API 기본 주소 내장, 또는 `data/raw/parking.csv` |
-| repair | 전국자동차정비업체표준데이터 | `data/raw/repair.csv` 또는 `SYNC_URL_REPAIR` |
-| inspection | 전국자동차검사소표준데이터 | `data/raw/inspection.csv` 또는 `SYNC_URL_INSPECTION` |
-| hydrogen | 한국가스안전공사_수소충전소 현황 | `data/raw/hydrogen.csv` 또는 `SYNC_URL_HYDROGEN` |
-| rest | 한국도로공사 휴게시설 | `EX_API_KEY` (data.ex.co.kr) 또는 `data/raw/rest.csv` |
-| recall | 한국교통안전공단_자동차결함 리콜현황 | `data/raw/recall.csv` 또는 `SYNC_URL_RECALL` |
-| efficiency | 한국에너지공단_자동차 표시연비 정보 | `data/raw/efficiency.csv` 또는 `SYNC_URL_EFFICIENCY` |
+| `car_parking` | 전국주차장정보표준데이터 | 표준데이터 OpenAPI, 1,000건씩 |
+| `car_repair` | 전국자동차정비업체표준데이터 | 표준데이터 OpenAPI, 1,000건씩 |
+| `car_inspection` | 전국자동차검사소표준데이터 | 표준데이터 OpenAPI, 1,000건씩 |
+| `car_rest` | 한국도로공사 휴게시설 (주유소 행 제외) | data.ex.co.kr API 한 번 |
+| `car_hydrogen` | 한국가스안전공사_수소충전소 현황 | 공공데이터포털 파일 다운로드 |
+| `car_recall` | 한국교통안전공단_자동차결함 리콜현황 | 공공데이터포털 파일 다운로드 |
+| `car_efficiency` | 한국에너지공단_자동차 표시연비 | 공공데이터포털 파일 다운로드 |
 
-CSV 는 공공데이터포털에서 내려받은 그대로 넣으면 됩니다 (UTF-8/EUC-KR 자동 인식).
-열 이름이 바뀌어 변환된 행이 0건이면, 스크립트가 원본의 열 이름을 출력하니 `scripts/sync-data.ts` 의 매퍼 후보에 추가하세요.
+- 적재: Edge Function `car-sync` (`supabase/functions/car-sync`). 변환 규칙은 `lib/mappers.ts` 를 함께 씁니다
+- 인증키: Supabase Vault `car_data_go_kr_key`, `car_ex_key` (Edge Function 이 service_role 전용 `car_sync_config()` 로 읽음)
+- 수동 실행: `select public.car_sync_dataset('parking');` (나머지 이름도 같음)
+- 자동 갱신: pg_cron 매월 1일 새벽(한국시간) 전체 재적재, 15일에 45일 넘게 갱신 안 된 행 정리
+- 기록: `car_sync_log` 테이블 (건수·오류)
+- 환경변수(선택): `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` — 기본값이 코드에 들어 있음
+
+주차장·정비업체·검사소는 공공데이터포털 각 데이터 페이지의 **"오픈 API" 탭**에서 활용신청해야 적재됩니다
+(기본으로 열리는 "파일데이터" 탭에는 신청 버튼이 없습니다).
+
+`npm run data:mock` 은 로컬 개발용 가짜 데이터(`public/data`, git 제외)를 만들고, `MOCK_DATA=1` 일 때만 이 파일을 읽습니다.
 
 ## 환경변수
 
@@ -69,8 +64,7 @@ npm install
 npm run data:mock          # 가짜 데이터로 public/data 생성
 MOCK_DATA=1 npm run dev    # 실시간 API 도 가짜 데이터로
 
-npm run data:sync          # 실제 데이터 동기화 (.dev.vars 의 키 + data/raw/*.csv)
-npm run dev
+npm run dev                # 실제 데이터 (Supabase)
 ```
 
 ## Cloudflare 배포 (Git 연동 Workers Builds)
@@ -83,19 +77,11 @@ npm run dev
 | 루트 디렉터리 | `/` |
 | 프로덕션 브랜치 | `main` |
 
-`opennextjs-cloudflare build` 는 `package.json` 의 `build` 스크립트를 실행하고, 이 스크립트가
-**데이터 동기화(`scripts/sync-data.ts --soft`) → `next build`** 순서로 돕니다.
-동기화가 실패해도 빌드는 멈추지 않고, 그 데이터만 "데이터 준비 중"으로 표시됩니다.
+`opennextjs-cloudflare build` 는 `package.json` 의 `build`(`next build`)만 실행합니다. 데이터는 빌드에 넣지 않고 DB 에서 읽습니다.
 
-환경변수는 두 곳에 넣습니다.
+실행 시 환경변수 (Workers > car > Settings > Variables and Secrets):
+`DATA_GO_KR_SERVICE_KEY`, `ITS_API_KEY` (+ 선택 `ITS_DISASTER_URL`, `ITS_CAUTION_URL`).
 
-| 위치 (Workers > car > Settings) | 변수 | 용도 |
-|---|---|---|
-| **Build > 변수 및 비밀** (빌드 시) | `DATA_GO_KR_SERVICE_KEY`, `EX_API_KEY` | 주차장·휴게소 동기화 |
-| **Variables and Secrets** (실행 시) | `DATA_GO_KR_SERVICE_KEY`, `ITS_API_KEY` (+ 선택 `ITS_DISASTER_URL`, `ITS_CAUTION_URL`) | 전기차 충전소, 돌발상황, CCTV |
-
-정비소·검사소·수소·리콜·연비처럼 CSV 로만 받는 데이터는 `data/raw/<이름>.csv` 로 **커밋**하면 빌드 때 반영됩니다.
-데이터를 갱신하려면 새 CSV 를 커밋하거나 대시보드에서 다시 배포하세요.
 Node 버전은 `.node-version` (22) 으로 고정했습니다. `wrangler.jsonc` 의 `name`("car")은 대시보드의 Worker 이름과 같아야 합니다.
 
 ## 검색엔진용 파일
@@ -106,7 +92,7 @@ Node 버전은 `.node-version` (22) 으로 고정했습니다. `wrangler.jsonc` 
 | `/sitemap.xml` | 사이트맵 인덱스 (`lib/sitemap.ts`) |
 | `/sitemaps/pages.xml` | 홈·카테고리·시도별 목록·가이드 |
 | `/sitemaps/{parking,repair,inspection}-N.xml` | Supabase 상세 페이지, 5,000개씩 |
-| `/sitemaps/{hydrogen,rest,recall}.xml` | 동기화 파일 상세 페이지 |
+| `/sitemaps/{hydrogen,rest,recall}.xml` | 수소충전소·휴게소·리콜 상세 페이지 |
 | `/ads.txt`, `/manifest.webmanifest`, `/og.png` | 애드센스, 웹 앱 매니페스트, 공유 이미지 |
 
 ## 키 확인

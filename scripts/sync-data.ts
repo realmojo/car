@@ -17,6 +17,7 @@ import path from "node:path";
 import { SIDO } from "../lib/codes.ts";
 import type { DatasetId, Row, Shard, SyncMeta } from "../lib/dataset-types.ts";
 import { MAPPERS, findArray, type Raw } from "../lib/mappers.ts";
+import { decode, parseCsv } from "../lib/csv.ts";
 import { SHARDED } from "../lib/dataset-types.ts";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
@@ -34,51 +35,6 @@ async function loadEnvFile(file: string) {
 }
 
 /* ------------------------------------------------------------ 원본 읽기 */
-
-function decode(buf: Buffer) {
-  if (buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf) return buf.subarray(3).toString("utf8");
-  try {
-    return new TextDecoder("utf-8", { fatal: true }).decode(buf);
-  } catch {
-    // 공공데이터포털 CSV 는 EUC-KR(CP949) 인 경우가 많다
-    return new TextDecoder("euc-kr").decode(buf);
-  }
-}
-
-export function parseCsv(text: string): Raw[] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = "";
-  let quoted = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (quoted) {
-      if (c === '"' && text[i + 1] === '"') {
-        cell += '"';
-        i++;
-      } else if (c === '"') quoted = false;
-      else cell += c;
-    } else if (c === '"') quoted = true;
-    else if (c === ",") {
-      row.push(cell);
-      cell = "";
-    } else if (c === "\n" || c === "\r") {
-      if (c === "\r" && text[i + 1] === "\n") i++;
-      row.push(cell);
-      rows.push(row);
-      row = [];
-      cell = "";
-    } else cell += c;
-  }
-  if (cell || row.length) {
-    row.push(cell);
-    rows.push(row);
-  }
-  const [header, ...body] = rows.filter((r) => r.some((c) => c.trim()));
-  if (!header) return [];
-  const keys = header.map((h) => h.trim());
-  return body.map((r) => Object.fromEntries(keys.map((k, i) => [k, r[i] ?? ""])));
-}
 
 const DEFAULT_URLS: Partial<Record<DatasetId, string>> = {
   parking: "https://api.data.go.kr/openapi/tn_pubr_prkplce_info_api",
