@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { findSigunguByZscode } from "@/lib/codes";
-import { getStation, type EvStation } from "@/lib/ev";
-import { findRow, type Row } from "@/lib/datasets";
+import { getStationsByRegion, type EvStation } from "@/lib/ev";
+import { findRow, loadRows, type Row } from "@/lib/datasets";
 import { attempt } from "@/lib/errors";
 import { ymdhm } from "@/lib/format";
-import { buildMetadata } from "@/lib/seo";
+import { absoluteUrl, buildMetadata } from "@/lib/seo";
+import { evArticle, hydrogenArticle } from "@/lib/content/charge";
+import { placeJsonLd, webPageJsonLd } from "@/lib/content/jsonld";
+import ArticleBody, { ArticleLead, JsonLd } from "@/components/article/ArticleBody";
+import AdSlot from "@/components/ads/AdSlot";
 import { withQuery } from "@/lib/url";
 import Crumbs from "@/components/common/Crumbs";
 import DetailView from "@/components/common/DetailView";
@@ -17,7 +21,13 @@ export const dynamic = "force-dynamic";
 type Params = { id: string };
 
 type Resolved =
-  | { kind: "ev"; station: EvStation | null; error: string | null; region: NonNullable<ReturnType<typeof findSigunguByZscode>> }
+  | {
+      kind: "ev";
+      station: EvStation | null;
+      all: EvStation[];
+      error: string | null;
+      region: NonNullable<ReturnType<typeof findSigunguByZscode>>;
+    }
   | { kind: "h2"; row: Row };
 
 /** id: ev-<zscode>-<statId> 또는 h2-<key> */
@@ -26,8 +36,9 @@ async function resolve(id: string): Promise<Resolved | null> {
   if (ev) {
     const region = findSigunguByZscode(ev[1]);
     if (!region) return null;
-    const { data, error } = await attempt(getStation(region.gu.zscodes, ev[2]));
-    return { kind: "ev", station: data, error, region };
+    // 상세도 시군구 목록(캐시 공유)에서 찾는다. 주변 충전소·지역 통계에 목록을 함께 쓴다
+    const { data, error } = await attempt(getStationsByRegion(region.gu.zscodes));
+    return { kind: "ev", station: data?.find((s) => s.id === ev[2]) ?? null, all: data ?? [], error, region };
   }
   const h2 = id.match(/^h2-([a-z0-9]+)$/);
   if (h2) {
@@ -46,14 +57,16 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     const fast = r.station.chargers.filter((c) => c.fast).length;
     return buildMetadata({
       path: `/charge/${id}`,
-      title: `${r.station.name} 전기차 충전소 - 충전기 ${r.station.chargers.length}대 실시간 상태`,
-      description: `${r.station.address} ${r.station.name}. 급속 ${fast}대, 완속 ${r.station.chargers.length - fast}대. 운영기관 ${r.station.operator}, ${r.station.useTime}.`,
+      title: `${r.station.name} 전기차 충전소 - 급속 ${fast}대·완속 ${r.station.chargers.length - fast}대 실시간 상태 (${r.region.sido.short} ${r.region.gu.name})`,
+      description: `${r.station.address} ${r.station.name}. 급속 ${fast}대, 완속 ${r.station.chargers.length - fast}대, 운영기관 ${r.station.operator}. 충전 시간·요금 예상과 주변 충전소를 정리했습니다.`.slice(0, 155),
+      keywords: [`${r.station.name} 충전소`, `${r.region.gu.name} 전기차 충전소`, `${r.region.gu.name} 급속 충전`],
     });
   }
   return buildMetadata({
     path: `/charge/${id}`,
-    title: `${r.row.name} - 수소충전소 위치·운영시간`,
-    description: `${r.row.address ?? ""} ${r.row.name}. ${r.row.tags.join(", ")}`,
+    title: `${r.row.name} - 수소충전소 운영시간·위치·충전 가능 차량`,
+    description: `${r.row.address ?? ""} ${r.row.name}. ${r.row.tags.join(", ")}. 운영 시간, 공급 방식, 가까운 수소충전소를 정리했습니다.`.slice(0, 155),
+    keywords: [`${r.row.name}`, "수소충전소", "수소차 충전"],
   });
 }
 
@@ -64,26 +77,52 @@ export default async function ChargeDetailPage({ params }: { params: Promise<Par
 
   if (r.kind === "h2") {
     const row = r.row;
+    const all = (await loadRows("hydrogen")) ?? [row];
+    const article = hydrogenArticle(row, all);
+    const path = `/charge/${id}`;
+    const title = `${row.name} 수소충전소`;
+    const description = `${row.address ?? ""} ${row.name} 수소충전소 운영 시간과 공급 방식.`;
     return (
       <>
+        <JsonLd
+          data={[
+            webPageJsonLd(path, title, description, `${absoluteUrl(path)}#place`),
+            placeJsonLd({
+              type: ["AutomotiveBusiness", "LocalBusiness"],
+              path,
+              name: row.name,
+              description,
+              row,
+              address: row.address,
+              lat: row.lat,
+              lng: row.lng,
+              tel: row.tel,
+              extra: { additionalType: "https://www.wikidata.org/wiki/Q1418461" },
+            }),
+          ]}
+        />
+        <AdSlot slot="top" />
         <Crumbs
           trail={[
             { name: "충전", path: "/charge" },
             { name: "수소 충전소", path: "/charge?type=h2" },
-            { name: row.name, path: `/charge/${id}` },
+            { name: row.name, path },
           ]}
         />
         <div className="page-head">
-          <h1>{row.name}</h1>
+          <h1>💧 {row.name}</h1>
           <p>{row.address}</p>
         </div>
+        <AdSlot slot="title" />
+        <ArticleLead article={article} />
         <DetailView info={row.info} name={row.name} address={row.address} lat={row.lat} lng={row.lng} tel={row.tel} />
+        <ArticleBody article={article} />
         <SourceNote source={SOURCES.hydrogen} />
       </>
     );
   }
 
-  const { station, error, region } = r;
+  const { station, error, region, all } = r;
   const listHref = withQuery("/charge", { type: "ev", sido: region.sido.slug, gu: region.gu.code });
   const trail = [
     { name: "충전", path: "/charge" },
@@ -103,17 +142,39 @@ export default async function ChargeDetailPage({ params }: { params: Promise<Par
   const fast = station.chargers.filter((c) => c.fast).length;
   const available = station.chargers.filter((c) => c.state === "available").length;
   const charging = station.chargers.filter((c) => c.state === "charging").length;
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "AutomotiveBusiness",
-    name: station.name,
-    address: station.address,
-    ...(station.lat && station.lng ? { geo: { "@type": "GeoCoordinates", latitude: station.lat, longitude: station.lng } } : {}),
-  };
+  const article = evArticle(station, region, all);
+  const path = `/charge/${id}`;
+  const description = `${station.address} ${station.name} 전기차 충전소. 급속 ${fast}대, 완속 ${station.chargers.length - fast}대.`;
+  const jsonLd = [
+    webPageJsonLd(path, `${station.name} 전기차 충전소`, description, `${absoluteUrl(path)}#place`),
+    placeJsonLd({
+      type: ["AutomotiveBusiness", "LocalBusiness"],
+      path,
+      name: station.name,
+      description,
+      address: station.address,
+      region: region.sido.name,
+      locality: region.gu.name,
+      lat: station.lat,
+      lng: station.lng,
+      tel: station.operatorTel,
+      extra: {
+        additionalType: "https://www.wikidata.org/wiki/Q2140665",
+        amenityFeature: [
+          { "@type": "LocationFeatureSpecification", name: "급속 충전기", value: fast },
+          { "@type": "LocationFeatureSpecification", name: "완속 충전기", value: station.chargers.length - fast },
+          { "@type": "LocationFeatureSpecification", name: "무료 주차", value: station.parkingFree },
+        ],
+        ...(station.useTime ? { openingHours: station.useTime.includes("24") ? "Mo-Su 00:00-23:59" : undefined } : {}),
+        ...(station.operator ? { brand: { "@type": "Organization", name: station.operator } } : {}),
+      },
+    }),
+  ];
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <JsonLd data={jsonLd} />
+      <AdSlot slot="top" />
       <Crumbs trail={trail} />
       <div className="page-head">
         <h1>⚡ {station.name}</h1>
@@ -122,6 +183,8 @@ export default async function ChargeDetailPage({ params }: { params: Promise<Par
           {station.location && ` (${station.location})`}
         </p>
       </div>
+      <AdSlot slot="title" />
+      <ArticleLead article={article} />
 
       <StatTiles
         items={[
@@ -191,8 +254,9 @@ export default async function ChargeDetailPage({ params }: { params: Promise<Par
             ["전화", station.operatorTel],
           ]}
         />
-        <SourceNote source={SOURCES.ev} extra="충전기 상태는 약 10분 간격으로 갱신되며 실제와 다를 수 있습니다." />
       </section>
+      <ArticleBody article={article} />
+      <SourceNote source={SOURCES.ev} extra="충전기 상태는 약 10분 간격으로 갱신되며 실제와 다를 수 있습니다." />
     </>
   );
 }

@@ -84,6 +84,15 @@ npm run dev                # 실제 데이터 (Supabase)
 
 Node 버전은 `.node-version` (22) 으로 고정했습니다. `wrangler.jsonc` 의 `name`("car")은 대시보드의 Worker 이름과 같아야 합니다.
 
+## 상세 페이지 본문과 광고
+
+모든 2depth 상세 페이지(주차장·정비소·검사소·리콜·전기차/수소 충전소·휴게소·CCTV·가이드)는 데이터로 만든 5,000자 이상 본문을 싣습니다.
+
+- 본문 생성: `lib/content/*.ts` — 요금 계산 예시, 같은 시군구 통계와 주변 시설(`placeContext`), 이용 안내, 자주 묻는 질문
+- 렌더링: `components/article/ArticleBody.tsx` (요약·본문·FAQ)
+- 구조화 데이터: `lib/content/jsonld.ts` — WebPage, ParkingFacility / AutoRepair / AutomotiveBusiness / Place, Article, FAQPage (+ Crumbs 의 BreadcrumbList)
+- 광고: `components/ads/AdSlot.tsx`, 게시자·광고 단위 ID 는 `lib/ads.ts`. 상세 페이지마다 상단·제목 아래·h2 아래(2곳)
+
 ## 검색엔진용 파일
 
 | 경로 | 내용 |

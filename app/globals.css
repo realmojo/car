@@ -1756,3 +1756,107 @@ a.item-card:hover {
   font-size: 12px;
   color: var(--c-text-sub);
 }
+
+/* ---- 상세 페이지 본문(글) ---- */
+.article-lead {
+  margin: 0 0 18px;
+  padding: 20px 24px;
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--c-text);
+  background: var(--c-primary-light);
+  border-radius: var(--r-md);
+  word-break: keep-all;
+}
+
+.article-lead p + p {
+  margin-top: 8px;
+}
+
+.article {
+  margin-top: 24px;
+  padding: 28px 30px;
+  font-size: 15px;
+  line-height: 1.9;
+  color: var(--c-text);
+  background: var(--c-surface);
+  border-radius: var(--r-md);
+  word-break: keep-all;
+}
+
+.article__sec + .article__sec {
+  margin-top: 30px;
+}
+
+.article h2 {
+  margin: 0 0 10px;
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.article p + p,
+.article .table-wrap + p,
+.article ul + p {
+  margin-top: 10px;
+}
+
+.article ul {
+  margin: 10px 0 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+
+.article li + li {
+  margin-top: 4px;
+}
+
+.article .table-wrap {
+  margin: 12px 0 4px;
+}
+
+.article a {
+  color: var(--c-primary-dark);
+  text-decoration: underline;
+}
+
+.article__links {
+  list-style: none !important;
+  padding-left: 0 !important;
+}
+
+.article__links span {
+  color: var(--c-text-sub);
+  font-size: 14px;
+}
+
+.article__faq {
+  padding: 14px 0;
+  border-top: 1px solid var(--c-line);
+}
+
+.article__faq summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.article__faq p {
+  margin-top: 6px;
+  color: var(--c-text-sub);
+}
+
+@media (max-width: 640px) {
+  .article,
+  .article-lead {
+    padding: 20px 18px;
+  }
+}
+
+/* ---- 광고 ---- */
+.ad-slot {
+  display: block;
+  margin: 18px 0;
+  min-height: 90px;
+  text-align: center;
+  overflow: hidden;
+}

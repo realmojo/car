@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import { ADSENSE_CLIENT } from "@/lib/ads";
 import "./globals.css";
 import { GA_ID, NAVER_WA, SITE, buildMetadata } from "@/lib/seo";
 import SiteHeader from "@/components/layout/SiteHeader";
@@ -70,6 +71,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           dangerouslySetInnerHTML={{
             __html: `if(!wcs_add) var wcs_add = {}; wcs_add["wa"] = "${NAVER_WA}"; if(window.wcs) { wcs_do(); }`,
           }}
+        />
+        {/* Google AdSense */}
+        <script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+          crossOrigin="anonymous"
         />
       </head>
       <body>

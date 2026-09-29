@@ -139,3 +139,55 @@ export async function listPlaceKeys(
   }
   return out;
 }
+
+export interface PlaceContext {
+  /** 같은 시군구의 다른 시설 (가까운 순) */
+  nearby: Array<{ row: Row; km?: number }>;
+  /** 같은 시군구 시설 수 (본인 포함, 최대 1,000건까지 센다) */
+  total: number;
+  /** 같은 시군구에서 플래그별 시설 수 */
+  flagCounts: Record<string, number>;
+  /** 같은 시군구 주차장 평균 주차면 (주차장만) */
+  avgCapacity?: number;
+  /** 같은 시군구 시설 목록 (통계용) */
+  rows: Row[];
+}
+
+function distance(a: { lat?: number; lng?: number }, b: { lat?: number; lng?: number }) {
+  if (!a.lat || !a.lng || !b.lat || !b.lng) return undefined;
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const h =
+    Math.sin(dLat / 2) ** 2 + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/** 상세 페이지 본문용: 같은 시군구 시설로 주변 목록과 지역 통계를 만든다 */
+export async function placeContext(dataset: PlaceDataset, row: Row, limit = 6): Promise<PlaceContext> {
+  let rows: Row[] = [];
+  if (row.sido) {
+    if (mock()) {
+      rows = ((await loadRows(dataset, row.sido)) ?? []).filter((r) => !row.gu || r.gu === row.gu);
+    } else {
+      const p = new URLSearchParams({ select: COLUMNS, sido: `eq.${row.sido}`, order: "name.asc", limit: "1000" });
+      if (row.gu) p.set("gu", `eq.${row.gu}`);
+      rows = (await sbSelect(TABLES[dataset], p, 3600)).rows;
+    }
+  }
+  const flagCounts: Record<string, number> = {};
+  for (const r of rows) for (const f of r.flags) flagCounts[f] = (flagCounts[f] ?? 0) + 1;
+  const caps = rows.map((r) => r.num?.capacity ?? 0).filter((c) => c > 0);
+  const nearby = rows
+    .filter((r) => r.key !== row.key)
+    .map((r) => ({ row: r, km: distance(row, r) }))
+    .sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity) || a.row.name.localeCompare(b.row.name, "ko"))
+    .slice(0, limit);
+  return {
+    nearby,
+    total: rows.length,
+    flagCounts,
+    avgCapacity: caps.length ? Math.round(caps.reduce((a, b) => a + b, 0) / caps.length) : undefined,
+    rows,
+  };
+}

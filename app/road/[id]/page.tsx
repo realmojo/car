@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { findRow, type Row } from "@/lib/datasets";
-import { distanceKm, getCctvs, splitCctvName, type Cctv } from "@/lib/its";
+import { findRow, loadRows, type Row } from "@/lib/datasets";
+import { getCctvs, getRoadEvents, splitCctvName, type Cctv } from "@/lib/its";
 import { attempt } from "@/lib/errors";
-import { buildMetadata } from "@/lib/seo";
+import { absoluteUrl, buildMetadata } from "@/lib/seo";
+import { cctvArticle, restArticle } from "@/lib/content/road";
+import { placeJsonLd, webPageJsonLd } from "@/lib/content/jsonld";
+import ArticleBody, { ArticleLead, JsonLd } from "@/components/article/ArticleBody";
+import AdSlot from "@/components/ads/AdSlot";
 import { withQuery } from "@/lib/url";
 import Crumbs from "@/components/common/Crumbs";
 import DetailView from "@/components/common/DetailView";
@@ -45,16 +49,17 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     const roadName = route || (r.cctv.road === "ex" ? "고속도로" : "국도");
     return buildMetadata({
       path: `/road/${id}`,
-      title: `${place} CCTV - ${roadName} 실시간 도로 영상`,
-      description: `${roadName} ${place} 구간의 실시간 교통 CCTV 영상입니다. 지금 도로 상황과 주변 CCTV를 확인하세요.`,
+      title: `${place} CCTV - ${roadName} 실시간 교통 영상·돌발상황`,
+      description: `${roadName} ${place} 구간의 실시간 교통 CCTV 영상입니다. 지금 이 도로의 돌발상황, 주변 CCTV, 날씨별 운전 요령을 함께 확인하세요.`,
       keywords: [`${place} CCTV`, `${roadName} CCTV`, `${place} 교통상황`],
     });
   }
   const { row } = r;
   return buildMetadata({
     path: `/road/${id}`,
-    title: `${row.name} (${row.sub}) - 휴게소 위치·주차·편의시설`,
+    title: `${row.name} (${row.sub}) - 위치·주차·편의시설·주변 휴게소`,
     description: `${row.sub} ${row.name}. ${row.info.map(([k, v]) => `${k} ${v}`).join(", ")}`.slice(0, 150),
+    keywords: [row.name, `${row.name} 위치`, `${row.info.find(([k]) => k === "노선")?.[1] ?? "고속도로"} 휴게소`],
   });
 }
 
@@ -74,22 +79,34 @@ export default async function RoadDetailPage({ params }: { params: Promise<Param
 
   if (r.kind === "cctv") {
     const { cctv, all } = r;
+    const events = (await attempt(getRoadEvents())).data ?? [];
+    const article = cctvArticle(cctv, all, events);
     const { route, place } = splitCctvName(cctv.name);
     const roadName = route || (cctv.road === "ex" ? "고속도로" : "국도");
-    // 같은 노선에서 가까운 CCTV (좌표가 없으면 같은 노선 순서대로)
-    const nearby = all
-      .filter((c) => c.id !== cctv.id && (!route || c.route === route))
-      .map((c) => ({ c, d: cctv.lat && c.lat ? distanceKm(cctv, c) : Infinity }))
-      .sort((a, b) => a.d - b.d)
-      .slice(0, 8);
-
+    const path = `/road/${id}`;
+    const description = `${roadName} ${place} 구간의 실시간 교통 CCTV 영상.`;
     return (
       <>
+        <JsonLd
+          data={[
+            webPageJsonLd(path, `${place} CCTV - ${roadName} 실시간 교통 영상`, description, `${absoluteUrl(path)}#place`),
+            placeJsonLd({
+              type: "Place",
+              path,
+              name: `${place} (${roadName})`,
+              description,
+              lat: cctv.lat,
+              lng: cctv.lng,
+              extra: { containedInPlace: { "@type": "Place", name: roadName } },
+            }),
+          ]}
+        />
+        <AdSlot slot="top" />
         <Crumbs
           trail={[
             { name: "이동", path: "/road" },
             { name: `${roadName} CCTV`, path: withQuery("/road", { type: "cctv", road: cctv.road, route }) },
-            { name: place, path: `/road/${id}` },
+            { name: place, path },
           ]}
         />
         <div className="page-head">
@@ -101,6 +118,8 @@ export default async function RoadDetailPage({ params }: { params: Promise<Param
             {roadName} · 실시간 영상
           </p>
         </div>
+        <AdSlot slot="title" />
+        <ArticleLead article={article} />
         <CctvPlayer url={cctv.url} title={cctv.name} />
         <DetailView
           name={cctv.name}
@@ -112,26 +131,7 @@ export default async function RoadDetailPage({ params }: { params: Promise<Param
             ...(cctv.format ? ([["영상 형식", cctv.format]] as Array<[string, string]>) : []),
           ]}
         />
-        {nearby.length > 0 && (
-          <section className="sec">
-            <div className="sec-head">
-              <h2 className="sec-title">주변 CCTV</h2>
-            </div>
-            <ul className="cctv-grid">
-              {nearby.map(({ c, d }) => (
-                <li key={c.id}>
-                  <a target="_self" href={`/road/cctv-${c.road}-${c.id}`} className="cctv-card">
-                    <span className="cctv-card__icon" aria-hidden>
-                      📹
-                    </span>
-                    <span className="cctv-card__name">{splitCctvName(c.name).place}</span>
-                    <span className="cctv-card__route">{Number.isFinite(d) ? `${d.toFixed(1)}km` : c.route}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+        <ArticleBody article={article} />
         <SourceNote source={SOURCES.cctv} extra="영상은 국가교통정보센터가 제공하는 실시간 스트리밍이며 끊기거나 지연될 수 있습니다." />
       </>
     );
@@ -139,20 +139,48 @@ export default async function RoadDetailPage({ params }: { params: Promise<Param
 
   const { row } = r;
   const route = row.info.find(([k]) => k === "노선")?.[1];
+  const article = restArticle(row, (await loadRows("rest")) ?? [row]);
+  const path = `/road/${id}`;
+  const description = `${row.sub} ${row.name} 위치와 주차, 주변 휴게시설.`;
   return (
     <>
+      <JsonLd
+        data={[
+          webPageJsonLd(path, `${row.name} (${row.sub})`, description, `${absoluteUrl(path)}#place`),
+          placeJsonLd({
+            type: ["Place", "LocalBusiness"],
+            path,
+            name: row.name,
+            description,
+            row,
+            address: row.address,
+            lat: row.lat,
+            lng: row.lng,
+            tel: row.tel,
+            extra: {
+              isAccessibleForFree: true,
+              openingHours: "Mo-Su 00:00-23:59",
+              ...(route ? { containedInPlace: { "@type": "Place", name: route } } : {}),
+            },
+          }),
+        ]}
+      />
+      <AdSlot slot="top" />
       <Crumbs
         trail={[
           { name: "이동", path: "/road" },
           { name: route ? `${route} 휴게소` : "휴게소", path: withQuery("/road", { type: "rest", route }) },
-          { name: row.name, path: `/road/${id}` },
+          { name: row.name, path },
         ]}
       />
       <div className="page-head">
         <h1>🛣️ {row.name}</h1>
         <p>{row.sub}</p>
       </div>
+      <AdSlot slot="title" />
+      <ArticleLead article={article} />
       <DetailView info={row.info} name={row.name} address={row.address} lat={row.lat} lng={row.lng} tel={row.tel} />
+      <ArticleBody article={article} />
       <SourceNote source={SOURCES.rest} />
     </>
   );
