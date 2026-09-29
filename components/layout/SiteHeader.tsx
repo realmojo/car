@@ -7,11 +7,6 @@ import { SITE } from "@/lib/seo";
 export default function SiteHeader() {
   const pathname = usePathname() ?? "/";
 
-  // /fuel/nearby 가 /fuel 메뉴까지 켜지지 않도록 가장 긴 일치 하나만 활성화한다
-  const active = NAV.map((n) => n.href)
-    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
-    .sort((a, b) => b.length - a.length)[0];
-
   return (
     <header className="site-header">
       <div className="site-header__inner">
@@ -21,16 +16,26 @@ export default function SiteHeader() {
         </a>
 
         <nav className="site-nav" aria-label="주요 메뉴">
-          {NAV.map((item) => (
-            <a
-              target="_self"
-              key={item.href}
-              href={item.href}
-              className={item.href === active ? "is-active" : undefined}
-            >
-              {item.name}
-            </a>
-          ))}
+          {NAV.map((item) => {
+            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            return (
+              <div key={item.href} className={`nav-item${item.children ? " has-sub" : ""}`}>
+                <a target="_self" href={item.href} className={active ? "is-active" : undefined}>
+                  {item.name}
+                  {item.children && <span className="nav-caret" aria-hidden>▾</span>}
+                </a>
+                {item.children && (
+                  <div className="nav-sub">
+                    {item.children.map((c) => (
+                      <a target="_self" key={c.href} href={c.href}>
+                        {c.name}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
       </div>
     </header>

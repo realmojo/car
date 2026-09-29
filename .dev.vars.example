@@ -2,15 +2,26 @@
 # 이 파일을 .dev.vars 로 복사한 뒤 실제 값을 채우세요 (.dev.vars 는 커밋되지 않습니다).
 # 배포 환경에서는 Cloudflare 대시보드 Workers & Pages > car > Settings > Variables and Secrets 에서 설정합니다.
 
-# 한국석유공사 오피넷 무료 API 키 (https://www.opinet.co.kr/user/custapi/openApiInfo.do)
-OPINET_API_KEY=""
-
-# 공공데이터포털 일반 인증키(Decoding 값) - 한국환경공단_전기자동차 충전소 정보
-# (https://www.data.go.kr/data/15076352/openapi.do)
+# 공공데이터포털 일반 인증키 (Decoding/Encoding 모두 가능)
+#  - 실시간: 한국환경공단_전기자동차 충전소 정보
+#  - 동기화: 전국주차장정보표준데이터 등 (scripts/sync-data.ts)
 DATA_GO_KR_SERVICE_KEY=""
+
+# 국가교통정보센터(ITS) 인증키 - 실시간 돌발상황 (https://www.its.go.kr/opendata)
+ITS_API_KEY=""
+
+# 한국도로공사 고속도로 공공데이터 포털 인증키 - 휴게소 동기화 (https://data.ex.co.kr)
+EX_API_KEY=""
 
 # 사이트 기준 URL
 NEXT_PUBLIC_BASE_URL="https://car.kimgoon.kr"
 
-# API 키 없이 화면을 확인할 때만 1 로 설정 (가짜 데이터 사용)
+# API 키 없이 화면을 확인할 때만 1 로 설정 (실시간 API 대신 가짜 데이터)
 MOCK_DATA=""
+
+# 동기화 원본 주소를 바꿀 때 (선택). 공공데이터포털 상세 페이지의 "요청주소"를 넣는다.
+# SYNC_URL_REPAIR=""
+# SYNC_URL_INSPECTION=""
+# SYNC_URL_HYDROGEN=""
+# SYNC_URL_RECALL=""
+# SYNC_URL_EFFICIENCY=""

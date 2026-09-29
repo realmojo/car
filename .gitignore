@@ -24,3 +24,8 @@ next-env.d.ts
 .wrangler/
 .dev.vars
 cloudflare-env.d.ts
+
+# 공공데이터 동기화 결과·원본 (npm run data:sync 로 생성)
+/public/data/
+/data/raw/*
+!/data/raw/README.md

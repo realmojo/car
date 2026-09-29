@@ -1,61 +1,72 @@
 # 김군카 (car.kimgoon.kr)
 
-한국석유공사 **오피넷** 유가정보 API와 **한국환경공단 전기자동차 충전소 정보** API(공공데이터포털)로
-오늘의 기름값, 최저가 주유소, 전기차 충전소 정보를 보여 주는 사이트입니다.
-UI 는 keywordegg.com 의 콘텐츠 스킨(다크 셸 + 아이보리 카드, 올리브 포인트 컬러, Pretendard)을 그대로 따릅니다.
+충전소, 주차장, 정비소, 도로 상황을 **공공데이터**로 보여 주는 자동차 생활 정보 사이트입니다.
+UI 는 keywordegg.com 의 콘텐츠 스킨(다크 셸 + 아이보리 카드, 올리브 포인트, Pretendard)을 따르고,
+기술 스택도 같습니다: Next.js 16 (App Router) + Tailwind 4 + OpenNext Cloudflare Workers.
 
-기술 스택도 keywordegg 와 같습니다: Next.js 16 (App Router) + Tailwind 4 + OpenNext Cloudflare Workers.
+> 오피넷(한국석유공사) 데이터는 저작권정책상 영리 이용(애드센스)에 사전 허락이 필요해 사용하지 않습니다.
 
-## 페이지
+## 페이지 구조 (1depth 카테고리 / 2depth 상세)
 
-| 경로 | 내용 | 데이터 |
+| 1depth | 하위 분류 (쿼리) | 2depth 상세 | 데이터 |
+|---|---|---|---|
+| `/charge` | `?type=ev` 전기차 · `?type=h2` 수소 | `/charge/ev-<zscode>-<statId>`, `/charge/h2-<key>` | 환경공단 API (실시간), 가스안전공사 (동기화) |
+| `/parking` | `?f=public` 공영 · `?f=free` 무료 | `/parking/<sido>-<key>` | 전국주차장정보표준데이터 (동기화) |
+| `/repair` | `?type=shop` 정비소 · `inspection` 검사소 · `recall` 리콜 | `/repair/shop-…`, `/repair/insp-…`, `/repair/recall-<key>` | 정비업체·검사소 표준데이터, 리콜현황 (동기화) |
+| `/road` | `?type=event` 돌발상황 · `?type=rest` 휴게소 | `/road/rest-<key>` | ITS 돌발상황 API (실시간), 도로공사 휴게시설 (동기화) |
+| `/guide` | - | `/guide/<slug>` (연비 순위, 전기차 주행거리, 계산기, 충전 규격, 검사 주기) | 에너지공단 표시연비 (동기화) |
+| `/search` | `?q=&sido=` | - | 동기화 데이터 전체 |
+
+지역은 모든 목록에서 `?sido=<슬러그>&gu=<시군구코드>&q=<검색어>&page=` 로 거릅니다.
+
+## 데이터 두 종류
+
+**실시간 API** (요청 시 호출, `lib/cache.ts` 로 5~10분 캐시)
+- 한국환경공단 전기자동차 충전소 정보 → `DATA_GO_KR_SERVICE_KEY`
+- 국가교통정보센터 돌발상황정보 → `ITS_API_KEY`
+
+**동기화 데이터** (월 단위로 바뀌는 목록형 데이터)
+`npm run data:sync` 가 원본을 받아 공통 형식으로 바꾼 뒤 `public/data/<데이터셋>/<시도>.json` 으로 나눠 저장합니다.
+Workers 의 서브요청 제한과 일일 호출 한도를 피하고, 페이지는 정적 자산만 읽어 빠릅니다.
+
+| 데이터셋 | 원본 | 가져오는 방법 |
 |---|---|---|
-| `/` | 전국 평균 유가 5종, 7일 추이 차트, 시도별 평균가, 서비스 소개·FAQ | 오피넷 |
-| `/fuel` | 유가 정보, 전국 최저가 TOP 10(유종 선택), 시도별 평균가 | 오피넷 |
-| `/fuel/[sido]` | 시도 최저가 주유소 20곳, 시군구별 평균가 | 오피넷 |
-| `/fuel/[sido]/[sigun]` | 시군구 최저가 주유소 20곳 | 오피넷 |
-| `/fuel/station/[id]` | 주유소 상세(유종별 가격, 부가서비스, 길찾기) | 오피넷 |
-| `/fuel/nearby` | 내 위치 반경 1/3/5km 주유소 가격순·거리순 | 오피넷 (`/api/fuel/around`) |
-| `/ev`, `/ev/[sido]` | 지역 선택, 충전 규격 안내 | 정적 |
-| `/ev/[sido]/[sigungu]` | 시군구 충전소 목록, 충전 가능 대수, 급속/완속·무료주차 필터 | 환경공단 |
-| `/calculator` | 유류비·전기차 충전비 계산기 (오늘 평균 유가 자동 입력) | 오피넷 |
+| parking | 전국주차장정보표준데이터 | API 기본 주소 내장, 또는 `data/raw/parking.csv` |
+| repair | 전국자동차정비업체표준데이터 | `data/raw/repair.csv` 또는 `SYNC_URL_REPAIR` |
+| inspection | 전국자동차검사소표준데이터 | `data/raw/inspection.csv` 또는 `SYNC_URL_INSPECTION` |
+| hydrogen | 한국가스안전공사_수소충전소 현황 | `data/raw/hydrogen.csv` 또는 `SYNC_URL_HYDROGEN` |
+| rest | 한국도로공사 휴게시설 | `EX_API_KEY` (data.ex.co.kr) 또는 `data/raw/rest.csv` |
+| recall | 한국교통안전공단_자동차결함 리콜현황 | `data/raw/recall.csv` 또는 `SYNC_URL_RECALL` |
+| efficiency | 한국에너지공단_자동차 표시연비 정보 | `data/raw/efficiency.csv` 또는 `SYNC_URL_EFFICIENCY` |
+
+CSV 는 공공데이터포털에서 내려받은 그대로 넣으면 됩니다 (UTF-8/EUC-KR 자동 인식).
+열 이름이 바뀌어 변환된 행이 0건이면, 스크립트가 원본의 열 이름을 출력하니 `scripts/sync-data.ts` 의 매퍼 후보에 추가하세요.
 
 ## 환경변수
 
 `.dev.vars.example` 를 `.dev.vars` 로 복사해 채웁니다. 배포 환경은 Cloudflare 대시보드
 (Workers & Pages > car > Settings > Variables and Secrets)에 설정합니다.
 
-| 변수 | 설명 |
-|---|---|
-| `OPINET_API_KEY` | [오피넷 무료 API](https://www.opinet.co.kr/user/custapi/openApiInfo.do) 인증키 |
-| `DATA_GO_KR_SERVICE_KEY` | [공공데이터포털 전기자동차 충전소 정보](https://www.data.go.kr/data/15076352/openapi.do) 일반 인증키 (Decoding/Encoding 모두 가능) |
-| `NEXT_PUBLIC_BASE_URL` | 사이트 주소 (기본 `https://car.kimgoon.kr`) |
-| `MOCK_DATA` | `1` 이면 API 대신 가짜 데이터로 화면을 띄웁니다 (개발용, 운영에서는 비워 두세요) |
-
 ## 실행
 
 ```bash
 npm install
-MOCK_DATA=1 npm run dev   # 키 없이 화면 확인
-npm run dev               # .dev.vars 의 실제 키 사용
-npm run cf:deploy         # Cloudflare 배포
+npm run data:mock          # 가짜 데이터로 public/data 생성
+MOCK_DATA=1 npm run dev    # 실시간 API 도 가짜 데이터로
+
+npm run data:sync          # 실제 데이터 동기화 (.dev.vars 의 키 + data/raw/*.csv)
+npm run dev
+
+npm run data:sync && npm run cf:deploy   # 배포 (public/data 가 정적 자산으로 올라갑니다)
 ```
 
-## 호출 한도와 캐시
+## 확인이 필요한 부분
 
-오피넷 무료 키는 하루 1,500건, 공공데이터포털 개발계정은 하루 1,000건입니다.
-`lib/cache.ts` 가 가공된 응답을 워커 메모리 + Cloudflare Cache API 에 보관합니다.
+이 코드를 만든 환경에서는 공공데이터 API 에 접속할 수 없어 **가짜 데이터로만 검증**했습니다. 실제 키로 처음 돌릴 때 확인하세요.
 
-- 평균 유가·시도/시군구 평균: 1시간
-- 최저가 주유소·주유소 상세: 30분
-- 주변 주유소: 15분 (좌표를 100m 격자로 묶어 공유)
-- 전기차 충전소: 10분
-
-트래픽이 늘면 공공데이터포털에서 운영계정(활용사례 등록)으로 한도를 늘리세요.
-
-## 참고
-
-- 오피넷 좌표(KATEC)는 `proj4` 로 WGS84 와 서로 변환합니다 (`lib/geo.ts`).
-- 환경공단 API 는 법정동 코드(zscode)로 조회합니다. 구가 있는 시(수원·성남 등)는 시·구 코드를,
-  특별자치도(강원 51/42, 전북 52/45)는 신·구 코드를 모두 조회해 합칩니다 (`lib/codes.ts`).
-  2026년 인천 행정구역 개편, 화성시 구 신설 등 새 코드는 아직 반영되어 있지 않습니다.
+- 표준데이터 API 주소: 주차장 외에는 포털 상세 페이지의 "요청주소"를 `SYNC_URL_*` 로 넣거나 CSV 를 쓰세요.
+- ITS 돌발상황 API 는 9443 포트를 씁니다. Cloudflare Workers 가 이 포트로 나가는 요청을 막으면
+  `ITS_API_BASE` 로 443 포트 주소(있다면)를 지정하거나, 이 데이터만 동기화 방식으로 바꿔야 합니다.
+- 환경공단 zscode 는 구가 있는 시(수원·성남 등)는 시·구 코드를, 강원(51/42)·전북(52/45)은 신·구 코드를 모두 조회해 합칩니다.
+  2026년 인천 행정구역 개편, 화성시 구 신설 코드는 아직 반영되어 있지 않습니다.
+- 광고를 붙이기 전에 각 데이터 상세 페이지의 **이용허락범위**가 "제한 없음"인지 확인하세요.

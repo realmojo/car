@@ -92,7 +92,7 @@ export default function EvStationList({ stations }: { stations: EvStation[] }) {
       {filtered.length === 0 ? (
         <div className="empty-box">조건에 맞는 충전소가 없습니다.</div>
       ) : (
-        <div className="station-list">
+        <div className="item-list">
           {filtered.slice(0, limit).map(({ st, chargers, available }) => {
             const fast = chargers.filter((c) => c.fast).length;
             const slow = chargers.length - fast;
@@ -102,7 +102,11 @@ export default function EvStationList({ stations }: { stations: EvStation[] }) {
               <article key={st.id} className="ev-station">
                 <div className="ev-station__head">
                   <div>
-                    <h3 className="ev-station__name">{st.name}</h3>
+                    <h3 className="ev-station__name">
+                      <a target="_self" href={`/charge/ev-${st.zscode}-${st.id}`}>
+                        {st.name}
+                      </a>
+                    </h3>
                     <p className="ev-station__addr">
                       {st.address}
                       {st.location && ` (${st.location})`}
@@ -146,7 +150,9 @@ export default function EvStationList({ stations }: { stations: EvStation[] }) {
                       </a>
                     </>
                   ) : null}
-                  {st.operatorTel && <a href={`tel:${st.operatorTel}`}>{st.operatorTel}</a>}
+                  <a target="_self" href={`/charge/ev-${st.zscode}-${st.id}`}>
+                    상세 정보
+                  </a>
                 </div>
 
                 <details>

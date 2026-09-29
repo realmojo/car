@@ -1,91 +1,41 @@
 /**
- * 지역·유종·상표·충전기 코드표.
+ * 지역·충전기 코드표.
  *
- * 오피넷과 환경공단은 지역 코드 체계가 다르다.
- *   - 오피넷: 자체 시도 코드 2자리 (01 서울 … 19 세종), 시군구는 4자리 (areaCode.do 로 조회)
- *   - 환경공단: 법정동 코드 앞자리 (zcode 2자리, zscode 5자리)
- * URL 에는 두 체계와 무관한 영문 슬러그를 쓴다.
+ * URL 에는 영문 시도 슬러그와 시군구 대표 코드(법정동 5자리)를 쓴다.
+ *   - 환경공단 충전소 API 는 법정동 코드(zcode 2자리, zscode 5자리)로 조회한다.
+ *   - 표준데이터(주차장·정비소 등)는 코드가 제각각이라 주소 문자열로 시도·시군구를 판별한다.
  */
 
 export interface Sido {
   slug: string;
   name: string;
   short: string;
-  /** 오피넷 시도 코드 */
-  opinet: string;
   /** 환경공단 zcode. 특별자치도 전환으로 코드가 바뀐 곳은 신·구 코드를 모두 넣는다 */
   zcodes: string[];
 }
 
 export const SIDO: Sido[] = [
-  { slug: "seoul", name: "서울특별시", short: "서울", opinet: "01", zcodes: ["11"] },
-  { slug: "gyeonggi", name: "경기도", short: "경기", opinet: "02", zcodes: ["41"] },
-  { slug: "incheon", name: "인천광역시", short: "인천", opinet: "15", zcodes: ["28"] },
-  { slug: "busan", name: "부산광역시", short: "부산", opinet: "10", zcodes: ["26"] },
-  { slug: "daegu", name: "대구광역시", short: "대구", opinet: "14", zcodes: ["27"] },
-  { slug: "gwangju", name: "광주광역시", short: "광주", opinet: "16", zcodes: ["29"] },
-  { slug: "daejeon", name: "대전광역시", short: "대전", opinet: "17", zcodes: ["30"] },
-  { slug: "ulsan", name: "울산광역시", short: "울산", opinet: "18", zcodes: ["31"] },
-  { slug: "sejong", name: "세종특별자치시", short: "세종", opinet: "19", zcodes: ["36"] },
-  { slug: "gangwon", name: "강원특별자치도", short: "강원", opinet: "03", zcodes: ["51", "42"] },
-  { slug: "chungbuk", name: "충청북도", short: "충북", opinet: "04", zcodes: ["43"] },
-  { slug: "chungnam", name: "충청남도", short: "충남", opinet: "05", zcodes: ["44"] },
-  { slug: "jeonbuk", name: "전북특별자치도", short: "전북", opinet: "06", zcodes: ["52", "45"] },
-  { slug: "jeonnam", name: "전라남도", short: "전남", opinet: "07", zcodes: ["46"] },
-  { slug: "gyeongbuk", name: "경상북도", short: "경북", opinet: "08", zcodes: ["47"] },
-  { slug: "gyeongnam", name: "경상남도", short: "경남", opinet: "09", zcodes: ["48"] },
-  { slug: "jeju", name: "제주특별자치도", short: "제주", opinet: "11", zcodes: ["50"] },
+  { slug: "seoul", name: "서울특별시", short: "서울", zcodes: ["11"] },
+  { slug: "gyeonggi", name: "경기도", short: "경기", zcodes: ["41"] },
+  { slug: "incheon", name: "인천광역시", short: "인천", zcodes: ["28"] },
+  { slug: "busan", name: "부산광역시", short: "부산", zcodes: ["26"] },
+  { slug: "daegu", name: "대구광역시", short: "대구", zcodes: ["27"] },
+  { slug: "gwangju", name: "광주광역시", short: "광주", zcodes: ["29"] },
+  { slug: "daejeon", name: "대전광역시", short: "대전", zcodes: ["30"] },
+  { slug: "ulsan", name: "울산광역시", short: "울산", zcodes: ["31"] },
+  { slug: "sejong", name: "세종특별자치시", short: "세종", zcodes: ["36"] },
+  { slug: "gangwon", name: "강원특별자치도", short: "강원", zcodes: ["51", "42"] },
+  { slug: "chungbuk", name: "충청북도", short: "충북", zcodes: ["43"] },
+  { slug: "chungnam", name: "충청남도", short: "충남", zcodes: ["44"] },
+  { slug: "jeonbuk", name: "전북특별자치도", short: "전북", zcodes: ["52", "45"] },
+  { slug: "jeonnam", name: "전라남도", short: "전남", zcodes: ["46"] },
+  { slug: "gyeongbuk", name: "경상북도", short: "경북", zcodes: ["47"] },
+  { slug: "gyeongnam", name: "경상남도", short: "경남", zcodes: ["48"] },
+  { slug: "jeju", name: "제주특별자치도", short: "제주", zcodes: ["50"] },
 ];
 
 export function findSido(slug: string): Sido | undefined {
   return SIDO.find((s) => s.slug === slug);
-}
-
-export function findSidoByOpinet(code: string): Sido | undefined {
-  return SIDO.find((s) => s.opinet === code.slice(0, 2));
-}
-
-/* ---------------------------------------------------------------- 유종 */
-
-export interface Product {
-  code: string;
-  name: string;
-  short: string;
-}
-
-export const PRODUCTS: Product[] = [
-  { code: "B027", name: "보통휘발유", short: "휘발유" },
-  { code: "D047", name: "자동차용경유", short: "경유" },
-  { code: "B034", name: "고급휘발유", short: "고급휘발유" },
-  { code: "K015", name: "자동차용부탄", short: "LPG" },
-  { code: "C004", name: "실내등유", short: "등유" },
-];
-
-/** 최저가 검색·주변 검색에서 고를 수 있는 유종 */
-export const SEARCH_PRODUCTS = PRODUCTS.filter((p) => p.code !== "C004");
-
-export function findProduct(code: string | undefined): Product {
-  return PRODUCTS.find((p) => p.code === code) ?? PRODUCTS[0];
-}
-
-/* ---------------------------------------------------------------- 상표 */
-
-export const BRANDS: Record<string, string> = {
-  SKE: "SK에너지",
-  GSC: "GS칼텍스",
-  HDO: "HD현대오일뱅크",
-  SOL: "S-OIL",
-  RTE: "자영알뜰",
-  RTX: "고속도로알뜰",
-  NHO: "농협알뜰",
-  ETC: "자가상표",
-  E1G: "E1",
-  SKG: "SK가스",
-};
-
-export function brandName(code: string | undefined): string {
-  if (!code) return "";
-  return BRANDS[code] ?? code;
 }
 
 /* ---------------------------------------------------------- 전기차 충전기 */
@@ -282,4 +232,24 @@ export function findSidoByAddress(address: string): Sido | undefined {
       head.startsWith(`${s.short} `) ||
       (SIDO_ALIASES[s.slug] ?? []).some((a) => head.startsWith(a)),
   );
+}
+
+/**
+ * 주소에서 시군구를 찾는다. "경기도 수원시 장안구 …" → 수원시, "세종특별자치시 …" → 세종시.
+ * 시도 다음 두 토큰 안에서 이름이 일치하는 시군구를 고른다.
+ */
+export function findSigunguByAddress(sido: Sido, address: string): Sigungu | undefined {
+  const list = SIGUNGU[sido.slug] ?? [];
+  if (list.length === 1) return list[0];
+  const tokens = address.trim().split(/\s+/).slice(1, 3);
+  return list.find((g) => tokens.includes(g.name));
+}
+
+/** 환경공단 zscode 가 속한 시군구 (구 코드·옛 코드 포함) */
+export function findSigunguByZscode(zscode: string): { sido: Sido; gu: Sigungu } | undefined {
+  for (const sido of SIDO) {
+    const gu = SIGUNGU[sido.slug]?.find((g) => g.zscodes.includes(zscode));
+    if (gu) return { sido, gu };
+  }
+  return undefined;
 }

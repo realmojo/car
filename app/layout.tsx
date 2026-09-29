@@ -4,7 +4,7 @@ import { SITE, buildMetadata } from "@/lib/seo";
 import SiteHeader from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
 
-const title = "김군카 - 오늘 기름값·최저가 주유소·전기차 충전소 찾기";
+const title = "김군카 - 전기차 충전소·주차장·정비소·도로 상황 찾기";
 
 export const metadata: Metadata = {
   ...buildMetadata({
@@ -12,16 +12,16 @@ export const metadata: Metadata = {
     title,
     description: SITE.description,
     keywords: [
-      "오늘 기름값",
-      "휘발유 가격",
-      "경유 가격",
-      "최저가 주유소",
-      "내 주변 주유소",
       "전기차 충전소",
-      "전기차 충전소 위치",
       "충전기 상태",
-      "유류비 계산기",
-      "오피넷",
+      "수소충전소",
+      "공영주차장",
+      "무료 주차장",
+      "자동차 정비소",
+      "자동차 검사소",
+      "자동차 리콜",
+      "고속도로 돌발상황",
+      "자동차 연비 순위",
     ],
   }),
   metadataBase: new URL(SITE.url),

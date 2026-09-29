@@ -1,77 +1,32 @@
-import { getAvgAllPrice, getRecentPrices, getSidoAvg } from "@/lib/opinet";
+import { NAV } from "@/lib/menu";
+import { loadMeta, loadRows } from "@/lib/datasets";
+import { getRoadEvents, eventGroup } from "@/lib/its";
 import { attempt } from "@/lib/errors";
 import { faqJsonLd } from "@/lib/seo";
-import PriceTiles from "@/components/fuel/PriceTiles";
-import TrendChart from "@/components/fuel/TrendChart";
-import AreaTable, { sidoHref } from "@/components/fuel/SidoTable";
-import RegionSearch from "@/components/common/RegionSearch";
-import { ErrorNotice, SourceNote } from "@/components/common/Notice";
+import RegionForm from "@/components/common/RegionForm";
+import RowList from "@/components/common/RowList";
+import StatTiles from "@/components/common/StatTiles";
 
 export const dynamic = "force-dynamic";
 
-const FEATURES = [
-  {
-    icon: "⛽",
-    title: "지역별 최저가 주유소",
-    desc: "시도·시군구를 고르면 휘발유·경유·LPG 가격이 가장 싼 주유소를 순서대로 보여 드립니다.",
-    href: "/fuel",
-    cta: "최저가 찾기",
-  },
-  {
-    icon: "📍",
-    title: "내 주변 주유소",
-    desc: "현재 위치 반경 1~5km 안의 주유소를 가격순·거리순으로 비교하고 바로 길찾기로 연결합니다.",
-    href: "/fuel/nearby",
-    cta: "주변 검색",
-  },
-  {
-    icon: "⚡",
-    title: "전기차 충전소",
-    desc: "전국 충전소 위치와 급속·완속 충전기, 지금 비어 있는 충전기 수를 한눈에 확인합니다.",
-    href: "/ev",
-    cta: "충전소 찾기",
-  },
-  {
-    icon: "📈",
-    title: "유가 추이",
-    desc: "최근 7일 전국 평균 휘발유·경유 가격 흐름과 전일 대비 등락을 확인합니다.",
-    href: "/fuel",
-    cta: "추이 보기",
-  },
-  {
-    icon: "🧮",
-    title: "유류비·충전비 계산기",
-    desc: "주행거리와 연비만 넣으면 내연기관차 기름값과 전기차 충전 요금을 바로 계산합니다.",
-    href: "/calculator",
-    cta: "계산하기",
-  },
-  {
-    icon: "🗺️",
-    title: "시군구 평균 가격",
-    desc: "우리 동네가 시도 평균보다 비싼지 싼지, 시군구별 평균 판매가격으로 비교합니다.",
-    href: "/fuel/seoul",
-    cta: "서울 보기",
-  },
-];
-
 const STEPS = [
-  { n: "01", title: "지역을 고릅니다", desc: "시도를 선택하거나 내 위치를 허용하면 주변 정보를 바로 불러옵니다." },
-  { n: "02", title: "가격·상태를 비교합니다", desc: "유종별 최저가 주유소, 충전 가능한 충전기 수를 한 화면에서 비교합니다." },
-  { n: "03", title: "길찾기로 바로 이동", desc: "카카오맵 길찾기로 연결되어 가장 싼 곳, 비어 있는 충전소로 바로 갑니다." },
+  { n: "01", title: "카테고리를 고릅니다", desc: "충전, 주차, 정비, 이동 중 필요한 정보를 선택합니다." },
+  { n: "02", title: "지역을 좁힙니다", desc: "시도와 시군구를 고르거나 동네 이름으로 검색합니다." },
+  { n: "03", title: "상세 정보와 길찾기", desc: "요금·운영시간·연락처를 확인하고 카카오맵 길찾기로 바로 이동합니다." },
 ];
 
 const FAQ = [
   {
-    q: "가격 정보는 어디에서 가져오나요?",
-    a: "한국석유공사 오피넷이 제공하는 유가정보 API 를 사용합니다. 전국 주유소가 신고한 판매가격을 바탕으로 하며, 평균 가격은 하루 여러 차례 갱신됩니다.",
+    q: "정보는 어디에서 가져오나요?",
+    a: "한국환경공단, 한국가스안전공사, 한국교통안전공단, 국토교통부, 한국도로공사, 한국에너지공단과 각 지방자치단체가 공공데이터포털 등에 공개한 데이터를 사용합니다. 각 페이지 하단에 출처를 밝혀 두었습니다.",
   },
   {
-    q: "전기차 충전기 상태는 실시간인가요?",
-    a: "한국환경공단 전기자동차 충전소 정보 API 의 상태값을 사용합니다. 충전 사업자가 보고하는 주기에 따라 수 분 정도 늦을 수 있으며, 일부 충전기는 상태가 제공되지 않습니다.",
+    q: "얼마나 자주 갱신되나요?",
+    a: "전기차 충전기 상태와 도로 돌발상황은 수 분 간격으로 갱신합니다. 주차장·정비소·검사소처럼 자주 바뀌지 않는 정보는 원천 데이터의 갱신 주기(대개 월 단위)에 맞춰 반영합니다.",
   },
   {
-    q: "표시된 가격과 실제 주유소 가격이 달라요.",
-    a: "주유소가 가격을 바꾼 뒤 오피넷에 반영되기까지 시간이 걸릴 수 있습니다. 주유 전에 현장 가격을 꼭 확인해 주세요.",
+    q: "표시된 정보가 실제와 달라요.",
+    a: "원천 기관의 등록 정보가 늦게 바뀌었거나 현장 사정이 달라졌을 수 있습니다. 요금·운영시간은 방문 전 관리기관에 확인해 주세요.",
   },
   {
     q: "이용 요금이 있나요?",
@@ -80,99 +35,121 @@ const FAQ = [
 ];
 
 export default async function HomePage() {
-  const [avg, recent, gasoline, diesel] = await Promise.all([
-    attempt(getAvgAllPrice()),
-    attempt(getRecentPrices()),
-    attempt(getSidoAvg("B027")),
-    attempt(getSidoAvg("D047")),
+  const [meta, events, recalls] = await Promise.all([
+    loadMeta(),
+    attempt(getRoadEvents()),
+    loadRows("recall"),
   ]);
+  const c = meta?.counts ?? {};
+  const eventList = events.data ?? [];
+  const latestRecalls = [...(recalls ?? [])].sort((a, b) => (b.num?.date ?? 0) - (a.num?.date ?? 0)).slice(0, 5);
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(FAQ)) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(FAQ)) }} />
 
       <section className="lp-hero">
-        <span className="lp-eyebrow">오피넷 · 한국환경공단 공공데이터</span>
+        <span className="lp-eyebrow">공공데이터로 찾는 자동차 생활 정보</span>
         <h1>
-          오늘 기름값부터 전기차 충전소까지,
+          충전소부터 주차장, 정비소까지
           <br />
-          내 차에 필요한 정보를 한곳에서
+          운전에 필요한 정보를 한곳에서
         </h1>
-        <p>
-          전국·지역별 평균 유가와 최저가 주유소, 전기차 충전소 위치와 충전기
-          상태를 공공데이터로 매일 확인하세요.
-        </p>
-        <RegionSearch />
+        <p>전기차 충전기 실시간 상태, 공영·무료 주차장 요금, 동네 정비소와 검사소, 도로 돌발상황을 확인하세요.</p>
+        <div className="hero-search">
+          <RegionForm basePath="/search" sido="seoul" gu="" q="" showGu={false} placeholder="동네·시설 이름 검색 (예: 역삼동)" />
+        </div>
         <div className="lp-hero__actions">
-          <a target="_self" href="/fuel/nearby" className="lp-btn lp-btn--primary">
-            📍 내 주변 최저가 주유소
+          <a target="_self" href="/charge?type=ev" className="lp-btn lp-btn--primary">
+            ⚡ 충전소 찾기
           </a>
-          <a target="_self" href="/calculator" className="lp-btn lp-btn--ghost">
-            유류비 계산기
+          <a target="_self" href="/parking?f=free" className="lp-btn lp-btn--ghost">
+            무료 주차장 보기
           </a>
         </div>
       </section>
 
       <section className="sec">
         <div className="sec-head">
-          <h2 className="sec-title">오늘의 전국 평균 유가</h2>
-          <a target="_self" href="/fuel" className="sec-more">
-            유가 정보 더보기
-          </a>
-        </div>
-        {avg.data ? <PriceTiles items={avg.data} /> : <ErrorNotice message={avg.error ?? ""} />}
-      </section>
-
-      {recent.data && recent.data.length > 0 && (
-        <section className="sec">
-          <div className="sec-head">
-            <h2 className="sec-title">최근 7일 가격 추이</h2>
-          </div>
-          <div className="panel">
-            <TrendChart data={recent.data} />
-          </div>
-        </section>
-      )}
-
-      <section className="sec">
-        <div className="sec-head">
-          <h2 className="sec-title">시도별 평균 가격</h2>
-        </div>
-        <p className="sec-sub">휘발유가 싼 지역부터 정렬했습니다. 지역을 누르면 최저가 주유소를 볼 수 있습니다.</p>
-        {gasoline.data && diesel.data ? (
-          <AreaTable gasoline={gasoline.data} diesel={diesel.data} hrefFor={sidoHref} areaLabel="시도" />
-        ) : (
-          <ErrorNotice message={gasoline.error ?? diesel.error ?? ""} />
-        )}
-        <SourceNote kind="fuel" />
-      </section>
-
-      <section id="features" className="lp-section">
-        <div className="lp-section__head">
-          <h2>이런 걸 할 수 있어요</h2>
-          <p>주유부터 충전까지, 운전자에게 필요한 정보를 공공데이터로 정리했습니다.</p>
+          <h2 className="sec-title">카테고리</h2>
         </div>
         <div className="lp-features">
-          {FEATURES.map((f) => (
-            <a target="_self" key={f.title} href={f.href} className="lp-feature">
+          {NAV.map((n) => (
+            <a target="_self" key={n.href} href={n.href} className="lp-feature">
               <div className="lp-feature__icon" aria-hidden>
-                {f.icon}
+                {n.icon}
               </div>
-              <h3>{f.title}</h3>
-              <p>{f.desc}</p>
-              <span className="lp-feature__link">{f.cta} →</span>
+              <h3>{n.name}</h3>
+              <p>{n.desc}</p>
+              <span className="lp-feature__link">바로가기 →</span>
             </a>
           ))}
         </div>
       </section>
 
+      {meta && (
+        <section className="sec">
+          <div className="sec-head">
+            <h2 className="sec-title">한눈에 보는 데이터</h2>
+          </div>
+          <StatTiles
+            items={[
+              { label: "주차장", value: c.parking ?? 0, unit: "곳" },
+              { label: "정비업체", value: c.repair ?? 0, unit: "곳" },
+              { label: "자동차 검사소", value: c.inspection ?? 0, unit: "곳" },
+              { label: "수소충전소", value: c.hydrogen ?? 0, unit: "곳" },
+            ]}
+          />
+        </section>
+      )}
+
+      {eventList.length > 0 && (
+        <section className="sec">
+          <div className="sec-head">
+            <h2 className="sec-title">지금 도로 상황</h2>
+            <a target="_self" href="/road?type=event" className="sec-more">
+              돌발상황 {eventList.length.toLocaleString()}건 보기
+            </a>
+          </div>
+          <ul className="item-list">
+            {eventList.slice(0, 4).map((e) => (
+              <li key={e.id} className="item-card">
+                <div className="item-card__main">
+                  <div className="item-card__name">
+                    <span className={`badge ${eventGroup(e) === "accident" ? "badge--warn" : "badge--muted"}`}>
+                      {e.detailType || e.eventType}
+                    </span>
+                    {e.roadName}
+                    {e.direction && <span className="item-card__sub">{e.direction}</span>}
+                  </div>
+                  <div className="item-card__addr">{e.message}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {latestRecalls.length > 0 && (
+        <section className="sec">
+          <div className="sec-head">
+            <h2 className="sec-title">최근 리콜</h2>
+            <a target="_self" href="/repair?type=recall" className="sec-more">
+              리콜 더보기
+            </a>
+          </div>
+          <RowList
+            rows={latestRecalls}
+            hrefFor={(r) => `/repair/recall-${r.key}`}
+            aside={(r) => <span className="num">{r.info.find(([k]) => k === "리콜 개시일")?.[1]}</span>}
+          />
+        </section>
+      )}
+
       <section className="lp-section">
         <div className="lp-section__head">
           <h2>이렇게 사용합니다</h2>
-          <p>가입 없이 10초면 가장 싼 주유소를 찾을 수 있습니다.</p>
+          <p>가입 없이 바로 쓸 수 있습니다.</p>
         </div>
         <ol className="lp-steps">
           {STEPS.map((s) => (
@@ -200,10 +177,10 @@ export default async function HomePage() {
       </section>
 
       <section className="lp-cta">
-        <h2>지금 내 주변에서 가장 싼 주유소는?</h2>
-        <p>위치만 허용하면 반경 안의 주유소를 가격순으로 보여 드립니다.</p>
-        <a target="_self" href="/fuel/nearby" className="lp-btn lp-btn--primary">
-          주변 주유소 찾기
+        <h2>지금 우리 동네 무료 주차장은?</h2>
+        <p>시군구를 고르면 무료로 운영하는 공영 주차장만 모아 보여 드립니다.</p>
+        <a target="_self" href="/parking?f=free" className="lp-btn lp-btn--primary">
+          무료 주차장 찾기
         </a>
       </section>
     </>

@@ -7,7 +7,7 @@ export const SITE = {
   url: process.env.NEXT_PUBLIC_BASE_URL || "https://car.kimgoon.kr",
   locale: "ko_KR",
   description:
-    "오늘의 전국·지역별 기름값과 최저가 주유소, 전기차 충전소 위치와 실시간 충전기 상태를 한국석유공사 오피넷·한국환경공단 공공데이터로 확인하세요.",
+    "전기차·수소 충전소와 실시간 충전기 상태, 공영·무료 주차장, 정비소와 자동차 검사소, 리콜, 도로 돌발상황을 공공데이터로 한곳에서 확인하세요.",
 } as const;
 
 export function absoluteUrl(path: string): string {

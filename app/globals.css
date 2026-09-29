@@ -22,14 +22,6 @@
   --c-on-dark: #b3bcc8;
   --c-line: #ededea;
 
-  /* 등락 표기: 국내 관례대로 상승 빨강, 하락 파랑 */
-  --c-up: #d5313d;
-  --c-down: #2f6fb0;
-
-  /* 유종 색 (차트 계열색, 팔레트 검증 통과) */
-  --fuel-gasoline: #c0620f;
-  --fuel-diesel: #2f6fb0;
-
   /* 충전기 상태 */
   --st-available: #2e8b57;
   --st-charging: #c0620f;
@@ -83,15 +75,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.up {
-  color: var(--c-up);
-}
-
-.down {
-  color: var(--c-down);
-}
-
-.flat {
+.muted {
   color: var(--c-text-dim);
 }
 
@@ -149,6 +133,63 @@
 .site-nav a.is-active {
   color: var(--c-accent);
   background: rgb(143 168 115 / 0.15);
+}
+
+.nav-item {
+  position: relative;
+}
+
+.nav-item > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-caret {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.nav-sub {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  display: none;
+  min-width: 160px;
+  padding: 6px;
+  margin-top: 6px;
+  background: var(--c-dark-surface);
+  border: 1px solid var(--c-dark-line-strong);
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.35);
+}
+
+/* 호버 중 메뉴와 하위 메뉴 사이 틈에서 닫히지 않도록 */
+.nav-sub::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 0;
+  right: 0;
+  height: 8px;
+}
+
+.nav-sub a {
+  display: block;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.nav-sub a:hover {
+  background: rgb(255 255 255 / 0.06);
+}
+
+@media (hover: hover) and (min-width: 769px) {
+  .nav-item.has-sub:hover .nav-sub,
+  .nav-item.has-sub:focus-within .nav-sub {
+    display: block;
+  }
 }
 
 /* ---- 본문 컨테이너 ---- */
@@ -278,21 +319,22 @@
   border-top: 1px solid var(--c-line);
 }
 
-/* ---- 유가 타일 ---- */
-.price-grid {
+/* ---- 요약 타일 ---- */
+.stat-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
+  margin-bottom: 18px;
 }
 
-.price-tile {
+.stat-tile {
   padding: 16px 16px 14px;
   background: var(--c-surface);
   border-radius: var(--r-md);
   box-shadow: var(--sh-sm);
 }
 
-.price-tile__name {
+.stat-tile__name {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -301,43 +343,34 @@
   color: var(--c-text-sub);
 }
 
-.price-tile__dot {
+.stat-tile__dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #c8ced6;
 }
 
-.price-tile__price {
+.stat-tile__value {
   margin-top: 6px;
-  font-size: 22px;
-  white-space: nowrap;
+  font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: var(--c-text);
+  white-space: nowrap;
 }
 
-.price-tile__price small {
+.stat-tile__value small {
   margin-left: 2px;
   font-size: 13px;
   font-weight: 600;
   color: var(--c-text-sub);
 }
 
-.price-tile__diff {
+.stat-tile__note {
   margin-top: 2px;
   font-size: 12px;
-  font-weight: 700;
-}
-
-.price-date {
-  margin-top: 10px;
-  font-size: 12px;
   color: var(--c-text-dim);
-  text-align: right;
 }
 
-/* ---- 칩 탭 (유종·정렬 선택) ---- */
+/* ---- 칩 탭 ---- */
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -368,6 +401,13 @@
   color: var(--c-dark-surface);
   background: var(--c-accent);
   border-color: var(--c-accent);
+}
+
+.chip__count {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.75;
 }
 
 /* ---- 데이터 표 ---- */
@@ -418,38 +458,16 @@
   text-decoration: underline;
 }
 
-.bar-cell {
-  position: relative;
-  min-width: 120px;
-}
-
-.bar-cell__bar {
-  display: block;
-  height: 8px;
-  border-radius: 4px;
-  background: var(--c-accent);
-}
-
-.bar-cell__bar.is-max {
-  background: var(--c-up);
-  opacity: 0.75;
-}
-
-.bar-cell__bar.is-min {
-  background: var(--c-down);
-  opacity: 0.75;
-}
-
-/* ---- 주유소 목록 ---- */
-.station-list {
+/* ---- 목록 카드 (주차장·정비소 등) ---- */
+.item-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.station {
-  display: grid;
-  grid-template-columns: 34px 1fr auto;
+.item-card {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 14px;
   padding: 14px 18px;
@@ -461,56 +479,146 @@
     box-shadow 0.2s;
 }
 
-a.station:hover {
+a.item-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--sh-md);
 }
 
-.station__rank {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--c-text-dim);
-  text-align: center;
+.item-card__main {
+  min-width: 0;
 }
 
-.station__rank.is-top {
-  color: var(--c-primary);
-}
-
-.station__name {
+.item-card__name {
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  align-items: baseline;
+  gap: 4px 8px;
   font-size: 15px;
   font-weight: 700;
+  word-break: keep-all;
 }
 
-.station__addr {
+.item-card__sub {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-text-sub);
+}
+
+.item-card__addr {
   margin-top: 3px;
   font-size: 13px;
   color: var(--c-text-sub);
   word-break: keep-all;
 }
 
-.station__price {
-  text-align: right;
-  font-size: 19px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+.item-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
 }
 
-.station__price small {
+.item-card__aside {
+  flex-shrink: 0;
+  text-align: right;
   font-size: 12px;
-  font-weight: 600;
   color: var(--c-text-sub);
 }
 
-.station__meta {
-  margin-top: 2px;
-  font-size: 12px;
-  color: var(--c-text-dim);
-  text-align: right;
+.item-card__aside strong {
+  display: block;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--c-text);
+}
+
+/* ---- 페이지 이동 ---- */
+.pager {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 18px;
+}
+
+.pager a {
+  min-width: 36px;
+  padding: 7px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--c-on-dark);
+  border: 1px solid var(--c-dark-line-strong);
+  border-radius: 10px;
+}
+
+.pager a:hover {
+  color: #fff;
+  border-color: var(--c-accent);
+}
+
+.pager a.is-active {
+  color: var(--c-dark-surface);
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+}
+
+/* ---- 지역·검색 폼 ---- */
+.region-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 6px;
+  background: var(--c-surface);
+  border-radius: 16px;
+  box-shadow: var(--sh-sm);
+}
+
+.region-form select,
+.region-form input {
+  min-width: 0;
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--c-text);
+  background: #fff;
+  border: 1px solid #e3e5df;
+  border-radius: 10px;
+  outline: none;
+}
+
+.region-form select {
+  flex: 0 1 170px;
+}
+
+.region-form input {
+  flex: 1 1 180px;
+}
+
+.region-form select:focus,
+.region-form input:focus {
+  border-color: var(--c-primary);
+}
+
+.region-form button {
+  padding: 9px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--c-primary);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.region-form button:hover {
+  background: var(--c-primary-dark);
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
 }
 
 /* ---- 뱃지 ---- */
@@ -546,13 +654,6 @@ a.station:hover {
 }
 
 /* ---- 전기차 충전소 ---- */
-.ev-summary {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-bottom: 18px;
-}
-
 .ev-station {
   padding: 16px 18px;
   background: var(--c-surface);
@@ -830,80 +931,6 @@ a.station:hover {
   line-height: 1.6;
   color: var(--c-text-sub);
   word-break: keep-all;
-}
-
-/* ---- 차트 ---- */
-.chart {
-  position: relative;
-  padding: 18px 20px 14px;
-}
-
-.chart__legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 8px;
-  font-size: 13px;
-  color: var(--c-text-sub);
-}
-
-.chart__legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.chart__legend i {
-  width: 14px;
-  height: 3px;
-  border-radius: 2px;
-}
-
-.chart svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  overflow: visible;
-}
-
-.chart__tip {
-  position: absolute;
-  pointer-events: none;
-  min-width: 128px;
-  padding: 8px 10px;
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--c-text);
-  background: #fff;
-  border: 1px solid var(--c-line);
-  border-radius: 8px;
-  box-shadow: var(--sh-md);
-  transform: translate(-50%, -100%);
-}
-
-.chart__tip b {
-  display: block;
-  margin-bottom: 2px;
-}
-
-.chart__tip span {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.chart details {
-  margin-top: 8px;
-  font-size: 13px;
-  color: var(--c-text-sub);
-}
-
-.chart details summary {
-  cursor: pointer;
-}
-
-.chart details table {
-  margin-top: 8px;
 }
 
 /* ---- 상세 정보 표 ---- */
@@ -1522,16 +1549,12 @@ a.station:hover {
     padding: 18px 14px 44px;
   }
 
-  .price-grid {
+  .stat-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .price-grid .price-tile:first-child {
-    grid-column: 1 / -1;
-  }
-
-  .ev-summary {
-    grid-template-columns: repeat(2, 1fr);
+  .nav-caret {
+    display: none;
   }
 
   .bento-grid,
@@ -1596,14 +1619,12 @@ a.station:hover {
 }
 
 @media (max-width: 480px) {
-  .station {
-    grid-template-columns: 24px 1fr auto;
-    gap: 10px;
+  .item-card {
     padding: 12px 14px;
   }
 
-  .station__price {
-    font-size: 17px;
+  .region-form select {
+    flex: 1 1 45%;
   }
 
   .data-table th,
@@ -1626,4 +1647,33 @@ a.station:hover {
   .site-footer__top {
     grid-template-columns: 1fr;
   }
+}
+
+.ev-station__name a:hover {
+  color: var(--c-primary-dark);
+  text-decoration: underline;
+}
+
+.list-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.list-sort {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-accent);
+}
+
+.hero-search {
+  max-width: 640px;
+  margin: 0 auto 16px;
+  text-align: left;
+}
+
+.hero-search .region-form {
+  margin-bottom: 0;
+  box-shadow: var(--sh-md);
 }

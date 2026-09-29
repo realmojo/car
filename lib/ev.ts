@@ -25,6 +25,8 @@ export interface EvCharger {
 
 export interface EvStation {
   id: string;
+  /** 환경공단 시군구 코드. 상세 페이지 URL 에 쓴다 */
+  zscode: string;
   name: string;
   address: string;
   location: string;
@@ -102,6 +104,7 @@ function groupStations(rows: Row[]): EvStation[] {
     if (!st) {
       st = {
         id,
+        zscode: str(r.zscode),
         name: str(r.statNm),
         address: str(r.addr),
         location: [str(r.addrDetail), str(r.location)].filter((s) => s && s !== "null").join(" "),
@@ -146,6 +149,12 @@ export function getStationsByRegion(zscodes: string[]): Promise<EvStation[]> {
     const results = await Promise.all(zscodes.map((z) => fetchZscode(z)));
     return groupStations(results.flat());
   });
+}
+
+/** 상세 페이지: 충전소가 속한 시군구 전체를 불러와(목록과 캐시 공유) 찾는다 */
+export async function getStation(zscodes: string[], statId: string): Promise<EvStation | null> {
+  const list = await getStationsByRegion(zscodes);
+  return list.find((s) => s.id === statId) ?? null;
 }
 
 export function summarize(stations: EvStation[]): EvSummary {
