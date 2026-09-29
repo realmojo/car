@@ -21,7 +21,7 @@ ITS_API_KEY=""
 EX_API_KEY=""
 
 # 사이트 기준 URL
-NEXT_PUBLIC_BASE_URL="https://car.kimgoon.kr"
+NEXT_PUBLIC_BASE_URL="https://car.keywordegg.com"
 
 # API 키 없이 화면을 확인할 때만 1 로 설정 (실시간 API 대신 가짜 데이터)
 MOCK_DATA=""

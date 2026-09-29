@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 export const SITE = {
   name: "차곳간",
   nameEn: "Chagotgan",
-  url: process.env.NEXT_PUBLIC_BASE_URL || "https://car.kimgoon.kr",
+  url: process.env.NEXT_PUBLIC_BASE_URL || "https://car.keywordegg.com",
   locale: "ko_KR",
   description:
     "전기차·수소 충전소와 실시간 충전기 상태, 공영·무료 주차장, 정비소와 자동차 검사소, 리콜, 도로 돌발상황을 공공데이터로 한곳에서 확인하세요.",
