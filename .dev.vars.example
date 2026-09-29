@@ -7,8 +7,15 @@
 #  - 동기화: 전국주차장정보표준데이터 등 (scripts/sync-data.ts)
 DATA_GO_KR_SERVICE_KEY=""
 
-# 국가교통정보센터(ITS) 인증키 - 실시간 돌발상황 (https://www.its.go.kr/opendata)
+# 국가교통정보센터(ITS) 인증키 - 돌발상황·CCTV (https://www.its.go.kr/opendata)
+# ITS 사이트에서 서비스별로(돌발상황정보, CCTV 화상자료 …) 이용 신청을 해야 한다.
 ITS_API_KEY=""
+# 선택: CCTV 영상 종류 (4: HTTPS 스트리밍, 1: HTTP 스트리밍). 기본 4, 결과가 없으면 1 로 다시 조회
+# ITS_CCTV_TYPE="4"
+# 선택: 재난상황정보·주의운전구간 요청 주소 (ITS 오픈데이터 상세 페이지의 요청 URL 에서 ? 앞부분)
+# 넣으면 재난상황은 돌발상황 목록에 합쳐지고, 주의운전구간 탭이 생긴다.
+# ITS_DISASTER_URL=""
+# ITS_CAUTION_URL=""
 
 # 한국도로공사 고속도로 공공데이터 포털 인증키 - 휴게소 동기화 (https://data.ex.co.kr)
 EX_API_KEY=""

@@ -1677,3 +1677,82 @@ a.item-card:hover {
   margin-bottom: 0;
   box-shadow: var(--sh-md);
 }
+
+/* ---- CCTV ---- */
+.cctv-box {
+  position: relative;
+  overflow: hidden;
+  background: #000;
+  border-radius: var(--r-md);
+  aspect-ratio: 16 / 9;
+}
+
+.cctv-box video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cctv-box--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--c-on-dark);
+  background: var(--c-dark-surface);
+  border: 1px solid var(--c-dark-line);
+}
+
+.cctv-box__error {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 10px;
+  font-size: 13px;
+  text-align: center;
+  color: #fff;
+  background: rgb(0 0 0 / 0.65);
+}
+
+.cctv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
+}
+
+.cctv-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--c-surface);
+  border-radius: var(--r-sm);
+  box-shadow: var(--sh-sm);
+  transition: all 0.15s;
+}
+
+.cctv-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sh-md);
+}
+
+.cctv-card__icon {
+  grid-row: 1 / 3;
+  font-size: 22px;
+}
+
+.cctv-card__name {
+  font-size: 14px;
+  font-weight: 700;
+  word-break: keep-all;
+}
+
+.cctv-card__route {
+  font-size: 12px;
+  color: var(--c-text-sub);
+}

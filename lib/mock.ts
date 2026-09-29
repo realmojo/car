@@ -3,7 +3,7 @@
  * 표준데이터(주차장·정비소 등)의 가짜 데이터는 scripts/sync-data.ts --mock 이 만든다.
  */
 import type { EvStation } from "./ev";
-import type { RoadEvent } from "./its";
+import type { CautionZone, Cctv, RoadEvent } from "./its";
 import { CHARGER_STATUS, CHARGER_TYPES, SLOW_TYPES } from "./codes";
 
 function rng(seed: string) {
@@ -85,5 +85,39 @@ export function roadEvents(): RoadEvent[] {
     endDate: "",
     lat: 37.2 + i * 0.1,
     lng: 127.0 + i * 0.12,
+  }));
+}
+
+export function cctvs(road: "ex" | "its"): Cctv[] {
+  const places =
+    road === "ex"
+      ? [["경부선", "양재"], ["경부선", "서초"], ["경부선", "기흥"], ["영동선", "마성"], ["서해안선", "매송"], ["중부선", "하남"]]
+      : [["국도3호선", "의정부"], ["국도1호선", "평택"], ["국도44호선", "한계령"], ["국도6호선", "양평"]];
+  return places.map(([route, place], i) => ({
+    id: `${road}mock${i}`,
+    road,
+    name: road === "ex" ? `[${route}] ${place}` : `${route} ${place}`,
+    route,
+    url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+    format: "HLS",
+    lat: 37.2 + i * 0.08,
+    lng: 127.0 + i * 0.07,
+  }));
+}
+
+export function cautionZones(): CautionZone[] {
+  return [
+    ["고속도로", "경부고속도로", "신갈JC~수원IC", "잦은 합류·차로 변경"],
+    ["국도", "국도 44호선", "한계령 구간", "급커브·급경사"],
+    ["고속도로", "영동고속도로", "대관령 구간", "결빙 주의"],
+  ].map(([roadType, roadName, title, reason], i) => ({
+    id: `caution${i}`,
+    roadType,
+    roadName,
+    title,
+    reason,
+    lat: 37.3 + i * 0.2,
+    lng: 127.1 + i * 0.3,
+    extra: [],
   }));
 }

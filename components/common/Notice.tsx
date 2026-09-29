@@ -33,6 +33,8 @@ export const SOURCES = {
   recall: { org: "한국교통안전공단", name: "자동차결함 리콜현황", url: "https://www.data.go.kr/data/3048950/fileData.do" },
   rest: { org: "한국도로공사", name: "휴게시설 현황", url: "https://data.ex.co.kr/" },
   event: { org: "국토교통부 국가교통정보센터", name: "돌발상황정보", url: "https://www.its.go.kr/opendata/opendataList?service=event" },
+  cctv: { org: "국토교통부 국가교통정보센터", name: "CCTV 화상자료", url: "https://www.its.go.kr/opendata/opendataList?service=cctv" },
+  caution: { org: "국토교통부 국가교통정보센터", name: "주의운전구간 정보", url: "https://www.its.go.kr/opendata/opendataList" },
   efficiency: { org: "한국에너지공단", name: "자동차 표시연비 정보", url: "https://www.data.go.kr/data/15083023/fileData.do" },
 } satisfies Record<string, Source>;
 

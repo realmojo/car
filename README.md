@@ -13,7 +13,7 @@ UI 는 keywordegg.com 의 콘텐츠 스킨(다크 셸 + 아이보리 카드, 올
 | `/charge` | `?type=ev` 전기차 · `?type=h2` 수소 | `/charge/ev-<zscode>-<statId>`, `/charge/h2-<key>` | 환경공단 API (실시간), 가스안전공사 (동기화) |
 | `/parking` | `?f=public` 공영 · `?f=free` 무료 | `/parking/<sido>-<key>` | 전국주차장정보표준데이터 (동기화) |
 | `/repair` | `?type=shop` 정비소 · `inspection` 검사소 · `recall` 리콜 | `/repair/shop-…`, `/repair/insp-…`, `/repair/recall-<key>` | 정비업체·검사소 표준데이터, 리콜현황 (동기화) |
-| `/road` | `?type=event` 돌발상황 · `?type=rest` 휴게소 | `/road/rest-<key>` | ITS 돌발상황 API (실시간), 도로공사 휴게시설 (동기화) |
+| `/road` | `?type=event` 돌발상황 · `cctv` CCTV · `caution` 주의운전구간 · `rest` 휴게소 | `/road/cctv-<ex\|its>-<id>`, `/road/rest-<key>` | ITS 돌발상황·CCTV·재난·주의운전구간 (실시간), 도로공사 휴게시설 (동기화) |
 | `/guide` | - | `/guide/<slug>` (연비 순위, 전기차 주행거리, 계산기, 충전 규격, 검사 주기) | 에너지공단 표시연비 (동기화) |
 | `/search` | `?q=&sido=` | - | 동기화 데이터 전체 |
 
@@ -23,7 +23,8 @@ UI 는 keywordegg.com 의 콘텐츠 스킨(다크 셸 + 아이보리 카드, 올
 
 **실시간 API** (요청 시 호출, `lib/cache.ts` 로 5~10분 캐시)
 - 한국환경공단 전기자동차 충전소 정보 → `DATA_GO_KR_SERVICE_KEY`
-- 국가교통정보센터 돌발상황정보 → `ITS_API_KEY`
+- 국가교통정보센터 돌발상황정보, CCTV 화상자료 → `ITS_API_KEY` (ITS 사이트에서 서비스별 이용 신청 필요, 서비스당 하루 1,000건)
+- 선택: 재난상황정보(`ITS_DISASTER_URL`), 주의운전구간(`ITS_CAUTION_URL`) — ITS 오픈데이터 상세 페이지의 요청 주소를 넣으면 켜집니다
 
 **동기화 데이터** (월 단위로 바뀌는 목록형 데이터)
 `npm run data:sync` 가 원본을 받아 공통 형식으로 바꾼 뒤 `public/data/<데이터셋>/<시도>.json` 으로 나눠 저장합니다.
@@ -60,12 +61,19 @@ npm run dev
 npm run data:sync && npm run cf:deploy   # 배포 (public/data 가 정적 자산으로 올라갑니다)
 ```
 
+## 키 확인
+
+```bash
+npm run check:apis   # .dev.vars 의 키로 각 API 를 한 번씩 호출해 상태와 필드 이름을 출력
+```
+
 ## 확인이 필요한 부분
 
 이 코드를 만든 환경에서는 공공데이터 API 에 접속할 수 없어 **가짜 데이터로만 검증**했습니다. 실제 키로 처음 돌릴 때 확인하세요.
 
 - 표준데이터 API 주소: 주차장 외에는 포털 상세 페이지의 "요청주소"를 `SYNC_URL_*` 로 넣거나 CSV 를 쓰세요.
-- ITS 돌발상황 API 는 9443 포트를 씁니다. Cloudflare Workers 가 이 포트로 나가는 요청을 막으면
+- CCTV 는 `cctvType=4`(HTTPS 스트리밍)로 먼저 조회하고, 결과가 없으면 1(HTTP)로 다시 조회합니다. HTTP 영상은 HTTPS 페이지에서 재생되지 않아 새 창 링크로 대신합니다. 영상을 사이트에 직접 띄우는 것이 ITS 이용 조건에 맞는지 확인하세요.
+- ITS API 는 9443 포트를 씁니다. Cloudflare Workers 가 이 포트로 나가는 요청을 막으면
   `ITS_API_BASE` 로 443 포트 주소(있다면)를 지정하거나, 이 데이터만 동기화 방식으로 바꿔야 합니다.
 - 환경공단 zscode 는 구가 있는 시(수원·성남 등)는 시·구 코드를, 강원(51/42)·전북(52/45)은 신·구 코드를 모두 조회해 합칩니다.
   2026년 인천 행정구역 개편, 화성시 구 신설 코드는 아직 반영되어 있지 않습니다.

@@ -50,9 +50,10 @@ export const NAV: NavItem[] = [
     name: "이동",
     href: "/road",
     icon: "🚗",
-    desc: "고속도로·국도 돌발상황, 휴게소와 졸음쉼터",
+    desc: "실시간 도로 CCTV, 돌발상황, 휴게소와 졸음쉼터",
     children: [
       { name: "실시간 돌발상황", href: "/road?type=event" },
+      { name: "실시간 CCTV", href: "/road?type=cctv" },
       { name: "휴게소·졸음쉼터", href: "/road?type=rest" },
     ],
   },
