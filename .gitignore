@@ -25,7 +25,5 @@ next-env.d.ts
 .dev.vars
 cloudflare-env.d.ts
 
-# 공공데이터 동기화 결과·원본 (npm run data:sync 로 생성)
+# 공공데이터 동기화 결과 (빌드할 때 npm run build 가 data/raw/*.csv 와 API 로 생성)
 /public/data/
-/data/raw/*
-!/data/raw/README.md

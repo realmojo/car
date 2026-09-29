@@ -1,6 +1,7 @@
 # 원본 CSV 두는 곳
 
-공공데이터포털에서 내려받은 CSV 를 아래 이름으로 넣고 `npm run data:sync` 를 실행하세요.
+공공데이터포털에서 내려받은 CSV 를 아래 이름으로 넣고 **커밋**하세요.
+Cloudflare 빌드(`npm run build`)가 이 파일들로 `public/data` 를 만듭니다. 로컬에서는 `npm run data:sync` 로 확인할 수 있습니다.
 CSV 가 있으면 API 보다 우선합니다. 인코딩(UTF-8/EUC-KR)은 자동으로 인식합니다.
 
 | 파일 이름 | 데이터 |

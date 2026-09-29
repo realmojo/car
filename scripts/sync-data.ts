@@ -4,6 +4,7 @@
  *   node scripts/sync-data.ts                # 전체
  *   node scripts/sync-data.ts parking rest   # 일부만
  *   node scripts/sync-data.ts --mock         # 가짜 데이터 (API 키 없이 화면 확인용)
+ *   node scripts/sync-data.ts --soft         # 빌드용: 실패해도 종료 코드 0 (빌드를 멈추지 않는다)
  *
  * 데이터마다 아래 순서로 원본을 찾는다.
  *   1) data/raw/<dataset>.csv  (공공데이터포털에서 내려받은 CSV. UTF-8/EUC-KR 자동 인식)
@@ -669,6 +670,7 @@ async function main() {
   await loadEnvFile(path.join(ROOT, ".env"));
   const args = process.argv.slice(2);
   const mock = args.includes("--mock");
+  const soft = args.includes("--soft");
   const all = Object.keys(MAPPERS) as DatasetId[];
   const wanted = args.filter((a) => !a.startsWith("--")) as DatasetId[];
   const targets = wanted.length ? wanted.filter((d) => all.includes(d)) : all;
@@ -697,7 +699,7 @@ async function main() {
       meta.counts[dataset] = await writeDataset(dataset, rows, raw.source, syncedAt);
     } catch (e) {
       console.error(`  ${dataset}: 실패 - ${e instanceof Error ? e.message : e}`);
-      process.exitCode = 1;
+      if (!soft) process.exitCode = 1;
     }
   }
   await writeFile(metaPath, JSON.stringify(meta, null, 2));

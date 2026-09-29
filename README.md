@@ -57,9 +57,32 @@ MOCK_DATA=1 npm run dev    # 실시간 API 도 가짜 데이터로
 
 npm run data:sync          # 실제 데이터 동기화 (.dev.vars 의 키 + data/raw/*.csv)
 npm run dev
-
-npm run data:sync && npm run cf:deploy   # 배포 (public/data 가 정적 자산으로 올라갑니다)
 ```
+
+## Cloudflare 배포 (Git 연동 Workers Builds)
+
+| 항목 | 값 |
+|---|---|
+| 빌드 명령 | `npx opennextjs-cloudflare build` |
+| 배포 명령 | `npx opennextjs-cloudflare deploy` |
+| 버전 명령 | `npx wrangler versions upload` |
+| 루트 디렉터리 | `/` |
+| 프로덕션 브랜치 | `main` |
+
+`opennextjs-cloudflare build` 는 `package.json` 의 `build` 스크립트를 실행하고, 이 스크립트가
+**데이터 동기화(`scripts/sync-data.ts --soft`) → `next build`** 순서로 돕니다.
+동기화가 실패해도 빌드는 멈추지 않고, 그 데이터만 "데이터 준비 중"으로 표시됩니다.
+
+환경변수는 두 곳에 넣습니다.
+
+| 위치 (Workers > car > Settings) | 변수 | 용도 |
+|---|---|---|
+| **Build > 변수 및 비밀** (빌드 시) | `DATA_GO_KR_SERVICE_KEY`, `EX_API_KEY` | 주차장·휴게소 동기화 |
+| **Variables and Secrets** (실행 시) | `DATA_GO_KR_SERVICE_KEY`, `ITS_API_KEY` (+ 선택 `ITS_DISASTER_URL`, `ITS_CAUTION_URL`) | 전기차 충전소, 돌발상황, CCTV |
+
+정비소·검사소·수소·리콜·연비처럼 CSV 로만 받는 데이터는 `data/raw/<이름>.csv` 로 **커밋**하면 빌드 때 반영됩니다.
+데이터를 갱신하려면 새 CSV 를 커밋하거나 대시보드에서 다시 배포하세요.
+Node 버전은 `.node-version` (22) 으로 고정했습니다. `wrangler.jsonc` 의 `name`("car")은 대시보드의 Worker 이름과 같아야 합니다.
 
 ## 키 확인
 
