@@ -22,9 +22,10 @@ export interface UrlEntry {
 }
 
 const PLACE_PATHS: Record<PlaceDataset, (sido: string, key: string) => string> = {
+  // 50,000개를 넘으면 뒤에서 잘리므로 건수가 가장 많은 정비업체를 맨 뒤에 둔다
   parking: (sido, key) => `/parking/${sido}-${key}`,
-  repair: (sido, key) => `/repair/shop-${sido}-${key}`,
   inspection: (sido, key) => `/repair/insp-${sido}-${key}`,
+  repair: (sido, key) => `/repair/shop-${sido}-${key}`,
 };
 
 /** 수소충전소·휴게소·리콜 상세 페이지 */
