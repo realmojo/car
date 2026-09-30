@@ -792,8 +792,8 @@ const EXTRA: Record<string, { blocks: Block[]; faq: Faq[] }> = {
           "부적합에 대비해 정비소가 가까운 검사소를 고르면 당일 재검사가 쉽습니다.",
         ],
         links: [
-          { label: "내 주변 자동차 검사소 찾기", href: "/repair?type=inspection" },
-          { label: "내 주변 정비소 찾기", href: "/repair?type=shop" },
+          { label: "내 주변 자동차 검사소 찾기", href: "/repair/inspection" },
+          { label: "내 주변 정비소 찾기", href: "/repair/shop" },
           { label: "자동차 리콜 조회", href: "/repair?type=recall" },
         ],
       },
@@ -875,8 +875,8 @@ export function guideArticle(slug: string, efficiency: Row[]): Article | null {
     ],
     links: [
       ...GUIDES.filter((g) => g.slug !== slug).map((g) => ({ label: g.title, href: `/guide/${g.slug}`, note: g.desc })),
-      { label: "전기차·수소 충전소 찾기", href: "/charge", note: "충전기 실시간 상태" },
-      { label: "자동차 검사소·정비소 찾기", href: "/repair", note: "지역별 목록과 운영 시간" },
+      { label: "전기차·수소 충전소 찾기", href: "/charge/ev", note: "충전기 실시간 상태" },
+      { label: "자동차 검사소·정비소 찾기", href: "/repair/shop", note: "지역별 목록과 운영 시간" },
     ],
   };
   const blocks = [...a.blocks, ...(more?.blocks ?? []), related];

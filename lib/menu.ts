@@ -4,6 +4,8 @@ export interface MenuItem {
 }
 
 export interface NavItem extends MenuItem {
+  /** 이 경로 아래면 메뉴를 켠다 (첫 화면 href 가 하위 경로일 때) */
+  match?: string;
   icon: string;
   desc: string;
   children?: MenuItem[];
@@ -11,38 +13,41 @@ export interface NavItem extends MenuItem {
 
 /**
  * 상단 GNB = 1depth 카테고리.
- * 하위 분류는 같은 카테고리 페이지의 ?type= / ?f= 로 나뉘고, 상세는 /<카테고리>/<id> (2depth).
+ * 하위 분류는 /<카테고리>/<종류>/<시도>/<시군구> 목록이고(lib/regions.ts), 상세는 /<카테고리>/<id>.
  */
 export const NAV: NavItem[] = [
   {
     name: "충전",
-    href: "/charge",
+    href: "/charge/ev",
+    match: "/charge",
     icon: "⚡",
     desc: "전기차 충전소 위치와 실시간 충전기 상태, 수소충전소",
     children: [
-      { name: "전기차 충전소", href: "/charge?type=ev" },
-      { name: "수소 충전소", href: "/charge?type=h2" },
+      { name: "전기차 충전소", href: "/charge/ev" },
+      { name: "수소 충전소", href: "/charge/h2" },
     ],
   },
   {
     name: "주차",
-    href: "/parking",
+    href: "/parking/all",
+    match: "/parking",
     icon: "🅿️",
     desc: "공영·민영 주차장 위치, 요금, 운영시간",
     children: [
-      { name: "전체 주차장", href: "/parking" },
-      { name: "공영 주차장", href: "/parking?f=public" },
-      { name: "무료 주차장", href: "/parking?f=free" },
+      { name: "전체 주차장", href: "/parking/all" },
+      { name: "공영 주차장", href: "/parking/public" },
+      { name: "무료 주차장", href: "/parking/free" },
     ],
   },
   {
     name: "정비",
-    href: "/repair",
+    href: "/repair/shop",
+    match: "/repair",
     icon: "🔧",
     desc: "동네 정비소, 자동차 검사소, 리콜 정보",
     children: [
-      { name: "정비소", href: "/repair?type=shop" },
-      { name: "자동차 검사소", href: "/repair?type=inspection" },
+      { name: "정비소", href: "/repair/shop" },
+      { name: "자동차 검사소", href: "/repair/inspection" },
       { name: "리콜 조회", href: "/repair?type=recall" },
     ],
   },

@@ -5,11 +5,13 @@ import { SIDO, SIGUNGU } from "@/lib/codes";
 import { withQuery } from "@/lib/url";
 
 /**
- * 시도 · 시군구 · 검색어 선택 폼. 제출하면 같은 카테고리 페이지를 쿼리스트링으로 다시 연다.
+ * 시도 · 시군구 · 검색어 선택 폼. 제출하면 같은 카테고리 페이지를 다시 연다.
+ * pathBase 가 있으면 지역을 경로로(/parking/free/seoul/11680), 없으면 쿼리스트링으로 붙인다.
  * keep 에 넣은 값(type, f 등)은 그대로 유지한다.
  */
 export default function RegionForm({
-  basePath,
+  basePath = "",
+  pathBase,
   sido,
   gu,
   q,
@@ -19,7 +21,8 @@ export default function RegionForm({
   showQuery = true,
   placeholder = "이름·주소 검색",
 }: {
-  basePath: string;
+  basePath?: string;
+  pathBase?: string;
   sido: string;
   gu: string;
   q: string;
@@ -36,7 +39,12 @@ export default function RegionForm({
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    window.location.assign(withQuery(basePath, { ...keep, sido: s, gu: g, q: text.trim() }));
+    const q = showQuery ? text.trim() : "";
+    window.location.assign(
+      pathBase
+        ? withQuery([pathBase, s, s && g].filter(Boolean).join("/"), { ...keep, q })
+        : withQuery(basePath, { ...keep, sido: s, gu: g, q }),
+    );
   };
 
   return (

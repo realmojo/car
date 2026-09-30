@@ -4,7 +4,7 @@
 import type { Row } from "../dataset-types";
 import type { Sido, Sigungu } from "../codes";
 import type { PlaceContext } from "../places";
-import { withQuery } from "../url";
+import { listPath } from "../url";
 import { type Article, type Block, type Faq, firstNumber, infoOf, josa, join, km, n, noNearbyBlock, pct } from "./common";
 
 export interface PlaceArgs {
@@ -262,15 +262,15 @@ export function parkingArticle({ row, sido, gu, ctx }: PlaceArgs): Article {
           : `${region}에는 무료로 등록된 주차장이 없어, 공영주차장의 기본 요금과 1일 주차권 금액을 비교해 고르는 것이 좋습니다.`,
       ],
       links: [
-        { label: `${region} 주차장 전체`, href: withQuery("/parking", { sido: sido?.slug, gu: gu?.code }) },
-        { label: `${region} 무료 주차장`, href: withQuery("/parking", { sido: sido?.slug, gu: gu?.code, f: "free" }), note: `${n(freeCount)}곳` },
-        { label: `${region} 공영 주차장`, href: withQuery("/parking", { sido: sido?.slug, gu: gu?.code, f: "public" }), note: `${n(publicCount)}곳` },
+        { label: `${region} 주차장 전체`, href: listPath("parking", "all", sido?.slug, gu?.code) },
+        { label: `${region} 무료 주차장`, href: listPath("parking", "free", sido?.slug, gu?.code), note: `${n(freeCount)}곳` },
+        { label: `${region} 공영 주차장`, href: listPath("parking", "public", sido?.slug, gu?.code), note: `${n(publicCount)}곳` },
       ],
     });
   }
 
   /* ---- 주변 주차장 ---- */
-  if (!ctx.nearby.length) blocks.push(noNearbyBlock("주차장", region, sido?.name ?? "전국", withQuery("/parking", { sido: sido?.slug })));
+  if (!ctx.nearby.length) blocks.push(noNearbyBlock("주차장", region, sido?.name ?? "전국", listPath("parking", "all", sido?.slug)));
   if (ctx.nearby.length) {
     blocks.push({
       h2: `${name} 주변 다른 주차장`,
@@ -406,9 +406,9 @@ export function parkingArticle({ row, sido, gu, ctx }: PlaceArgs): Article {
     h2: `${region} 함께 찾는 정보`,
     p: [`주차 말고도 ${region}에서 운전할 때 자주 찾는 정보를 모았습니다.`],
     links: [
-      { label: `${region} 전기차 충전소`, href: withQuery("/charge", { type: "ev", sido: sido?.slug, gu: gu?.code }), note: "충전기 실시간 상태" },
-      { label: `${region} 자동차 정비소`, href: withQuery("/repair", { type: "shop", sido: sido?.slug, gu: gu?.code }) },
-      { label: `${region} 자동차 검사소`, href: withQuery("/repair", { type: "inspection", sido: sido?.slug, gu: gu?.code }) },
+      { label: `${region} 전기차 충전소`, href: listPath("charge", "ev", sido?.slug, gu?.code), note: "충전기 실시간 상태" },
+      { label: `${region} 자동차 정비소`, href: listPath("repair", "shop", sido?.slug, gu?.code) },
+      { label: `${region} 자동차 검사소`, href: listPath("repair", "inspection", sido?.slug, gu?.code) },
       { label: "유류비·충전비 계산기", href: "/guide/calculator" },
     ],
   });

@@ -4,7 +4,8 @@ import { findSido, findSigungu } from "@/lib/codes";
 import { findRow, loadRows, type Row } from "@/lib/datasets";
 import { findPlace, placeContext, type PlaceContext } from "@/lib/places";
 import { absoluteUrl, buildMetadata } from "@/lib/seo";
-import { withQuery } from "@/lib/url";
+import { listPath } from "@/lib/url";
+import { SECTION_HOME } from "@/lib/lists";
 import { infoOf, type Article } from "@/lib/content/common";
 import { inspectionArticle, recallArticle, shopArticle } from "@/lib/content/repair";
 import { articleJsonLd, placeJsonLd, webPageJsonLd } from "@/lib/content/jsonld";
@@ -76,7 +77,7 @@ export default async function RepairDetailPage({ params }: { params: Promise<Par
   const sidoInfo = sido ? findSido(sido) : undefined;
   const guInfo = sidoInfo && row.gu ? findSigungu(sidoInfo.slug, row.gu) : undefined;
   const region = [sidoInfo?.short, guInfo?.name].filter(Boolean).join(" ");
-  const listHref = withQuery("/repair", { type: kind.type, sido: sidoInfo?.slug, gu: guInfo?.code });
+  const listHref = kind.type === "recall" ? "/repair?type=recall" : listPath("repair", kind.type, sidoInfo?.slug, guInfo?.code);
   const path = `/repair/${id}`;
   const title = titleOf(kind, row, region);
   const description = describe(kind, row, region);
@@ -118,7 +119,7 @@ export default async function RepairDetailPage({ params }: { params: Promise<Par
       <AdSlot slot="top" />
       <Crumbs
         trail={[
-          { name: "정비", path: "/repair" },
+          { name: "정비", path: SECTION_HOME.repair.path },
           { name: `${kind.label}${region ? ` · ${region}` : ""}`, path: listHref },
           { name: row.name, path },
         ]}

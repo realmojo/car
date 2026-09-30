@@ -7,7 +7,7 @@ import { findSido } from "../codes";
 import type { EvStation } from "../ev";
 import { summarize } from "../ev";
 import { distanceKm } from "../its";
-import { withQuery } from "../url";
+import { listPath } from "../url";
 import { type Article, type Block, type Faq, infoOf, josa, join, km, n, pct } from "./common";
 
 /** 전기·수소차 공통: 친환경차 혜택 */
@@ -172,7 +172,7 @@ export function evArticle(station: EvStation, region: { sido: Sido; gu: Sigungu 
       `${regionName}에는 충전소 ${n(sum.stations)}곳, 충전기 ${n(sum.chargers)}대가 있습니다. 급속 충전기는 ${n(sum.fast)}대(${pct(sum.fast, sum.chargers)}), 완속 충전기는 ${n(sum.slow)}대입니다. 지금 이 순간 충전 가능한 충전기는 ${n(sum.available)}대, 충전 중인 충전기는 ${n(sum.charging)}대입니다.`,
       "급속 충전기 비율이 낮은 지역에서는 퇴근 시간대와 주말에 급속 충전 대기가 생기기 쉽습니다. 집이나 직장 완속 충전을 기본으로 하고, 급속은 장거리 이동 때 쓰는 것이 효율적입니다.",
     ],
-    links: [{ label: `${regionName} 충전소 전체 보기`, href: withQuery("/charge", { type: "ev", sido: region.sido.slug, gu: region.gu.code }) }],
+    links: [{ label: `${regionName} 충전소 전체 보기`, href: listPath("charge", "ev", region.sido.slug, region.gu.code) }],
   });
 
   blocks.push({
@@ -273,7 +273,7 @@ export function evArticle(station: EvStation, region: { sido: Sido; gu: Sigungu 
       { label: "전기차 충전 규격 총정리", href: "/guide/charger-types", note: "DC콤보·차데모·AC3상" },
       { label: "전기차 주행거리 순위", href: "/guide/ev-range" },
       { label: "유류비·충전비 계산기", href: "/guide/calculator?mode=ev" },
-      { label: `${regionName} 주차장`, href: withQuery("/parking", { sido: region.sido.slug, gu: region.gu.code }) },
+      { label: `${regionName} 주차장`, href: listPath("parking", "all", region.sido.slug, region.gu.code) },
     ],
     p: ["출처: 한국환경공단 전기자동차 충전소 정보(공공데이터포털). 충전기 상태는 실시간에 가깝지만 실제와 다를 수 있습니다."],
   });
@@ -411,7 +411,7 @@ export function hydrogenArticle(row: Row, all: Row[]): Article {
       head: ["지역", "충전소 수", "비율"],
       rows: top.map(([s, c]) => [findSido(s)?.name ?? s, `${n(c)}곳`, pct(c, all.length)]),
     },
-    links: [{ label: `${sido?.short ?? ""} 수소충전소 목록`, href: withQuery("/charge", { type: "h2", sido: row.sido }) }],
+    links: [{ label: `${sido?.short ?? ""} 수소충전소 목록`, href: listPath("charge", "h2", row.sido) }],
   });
 
   blocks.push({
@@ -526,7 +526,7 @@ export function hydrogenArticle(row: Row, all: Row[]): Article {
       "수소차는 자동차 검사 때 고압가스 용기 관련 항목을 추가로 확인합니다.",
     ],
     links: [
-      { label: "전기차 충전소 찾기", href: "/charge?type=ev" },
+      { label: "전기차 충전소 찾기", href: "/charge/ev" },
       { label: "차종별 연비 순위", href: "/guide/fuel-economy" },
       { label: "자동차 검사 주기", href: "/guide/car-inspection" },
     ],

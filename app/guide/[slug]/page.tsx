@@ -146,7 +146,7 @@ function ChargerTypes() {
     <>
       <ChargerGuide />
       <p className="source-note">
-        주변 충전소의 충전기 규격과 지금 비어 있는 충전기는 <a href="/charge?type=ev">충전소 찾기</a>에서 확인할 수 있습니다.
+        주변 충전소의 충전기 규격과 지금 비어 있는 충전기는 <a href="/charge/ev">충전소 찾기</a>에서 확인할 수 있습니다.
       </p>
       <SourceNote source={SOURCES.ev} />
     </>

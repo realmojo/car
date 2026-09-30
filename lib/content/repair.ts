@@ -2,7 +2,7 @@
  * 정비소·검사소·리콜 상세 본문.
  */
 import type { Row } from "../dataset-types";
-import { withQuery } from "../url";
+import { listPath, withQuery } from "../url";
 import { type Article, type Block, type Faq, infoOf, josa, join, km, n, noNearbyBlock, pct } from "./common";
 import type { PlaceArgs } from "./parking";
 
@@ -126,7 +126,7 @@ export function shopArticle({ row, id, sido, gu, ctx }: PlaceArgs): Article {
     ],
   });
 
-  if (!ctx.nearby.length) blocks.push(noNearbyBlock("정비소", region, sido?.name ?? "전국", withQuery("/repair", { type: "shop", sido: sido?.slug })));
+  if (!ctx.nearby.length) blocks.push(noNearbyBlock("정비소", region, sido?.name ?? "전국", listPath("repair", "shop", sido?.slug)));
   if (ctx.nearby.length) {
     blocks.push({
       h2: `${name} 근처 다른 정비소`,
@@ -255,10 +255,10 @@ export function shopArticle({ row, id, sido, gu, ctx }: PlaceArgs): Article {
   blocks.push({
     h2: `${region} 함께 찾는 정보`,
     links: [
-      { label: `${region} 정비소 전체`, href: withQuery("/repair", { type: "shop", sido: sido?.slug, gu: gu?.code }), note: `${n(ctx.total)}곳` },
-      { label: `${region} 자동차 검사소`, href: withQuery("/repair", { type: "inspection", sido: sido?.slug, gu: gu?.code }) },
+      { label: `${region} 정비소 전체`, href: listPath("repair", "shop", sido?.slug, gu?.code), note: `${n(ctx.total)}곳` },
+      { label: `${region} 자동차 검사소`, href: listPath("repair", "inspection", sido?.slug, gu?.code) },
       { label: "자동차 리콜 검색", href: "/repair?type=recall" },
-      { label: `${region} 주차장`, href: withQuery("/parking", { sido: sido?.slug, gu: gu?.code }) },
+      { label: `${region} 주차장`, href: listPath("parking", "all", sido?.slug, gu?.code) },
       { label: "자동차 검사 주기와 준비물", href: "/guide/car-inspection" },
     ],
   });
@@ -369,7 +369,7 @@ export function inspectionArticle({ row, sido, gu, ctx }: PlaceArgs): Article {
     ],
   });
 
-  if (!ctx.nearby.length) blocks.push(noNearbyBlock("검사소", region, sido?.name ?? "전국", withQuery("/repair", { type: "inspection", sido: sido?.slug })));
+  if (!ctx.nearby.length) blocks.push(noNearbyBlock("검사소", region, sido?.name ?? "전국", listPath("repair", "inspection", sido?.slug)));
   blocks.push({
     h2: `${region} 검사소 현황`,
     p: [`${region}에는 자동차 검사소가 ${n(ctx.total)}곳 있습니다. 이 중 공단 직영은 ${n(tsCount)}곳, 민간 지정은 ${n(privCount)}곳입니다. 공단 검사소는 예약이 몰리는 월말에 대기가 길어질 수 있어, 가까운 민간 지정 검사소를 함께 알아 두면 편합니다.`],
@@ -508,8 +508,8 @@ export function inspectionArticle({ row, sido, gu, ctx }: PlaceArgs): Article {
       "검사 만료일은 자동차등록증이나 정부24, TS 사이버검사소에서 차량 번호로 조회할 수 있습니다.",
     ],
     links: [
-      { label: `${region} 검사소 전체`, href: withQuery("/repair", { type: "inspection", sido: sido?.slug, gu: gu?.code }) },
-      { label: `${region} 정비소`, href: withQuery("/repair", { type: "shop", sido: sido?.slug, gu: gu?.code }), note: "부적합 수리" },
+      { label: `${region} 검사소 전체`, href: listPath("repair", "inspection", sido?.slug, gu?.code) },
+      { label: `${region} 정비소`, href: listPath("repair", "shop", sido?.slug, gu?.code), note: "부적합 수리" },
       { label: "자동차 검사 주기와 과태료", href: "/guide/car-inspection" },
     ],
   });
@@ -741,8 +741,8 @@ export function recallArticle(row: Row, all: Row[]): Article {
     h2: "함께 보면 좋은 정보",
     links: [
       { label: "자동차 리콜 전체 검색", href: withQuery("/repair", { type: "recall", q: maker }) },
-      { label: "가까운 정비소 찾기", href: "/repair?type=shop" },
-      { label: "자동차 검사소 찾기", href: "/repair?type=inspection" },
+      { label: "가까운 정비소 찾기", href: "/repair/shop" },
+      { label: "자동차 검사소 찾기", href: "/repair/inspection" },
       { label: "자동차 검사 주기와 준비물", href: "/guide/car-inspection" },
     ],
     p: ["출처: 한국교통안전공단 자동차결함 리콜현황(공공데이터포털). 리콜 대상 여부와 이행 상태는 자동차리콜센터에서 차량 번호로 조회하는 것이 가장 정확합니다."],

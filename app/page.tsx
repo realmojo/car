@@ -69,10 +69,10 @@ export default async function HomePage() {
           <RegionForm basePath="/search" sido="seoul" gu="" q="" showGu={false} placeholder="동네·시설 이름 검색 (예: 역삼동)" />
         </div>
         <div className="lp-hero__actions">
-          <a target="_self" href="/charge?type=ev" className="lp-btn lp-btn--primary">
+          <a target="_self" href="/charge/ev" className="lp-btn lp-btn--primary">
             ⚡ 충전소 찾기
           </a>
-          <a target="_self" href="/parking?f=free" className="lp-btn lp-btn--ghost">
+          <a target="_self" href="/parking/free" className="lp-btn lp-btn--ghost">
             무료 주차장 보기
           </a>
         </div>
@@ -188,7 +188,7 @@ export default async function HomePage() {
       <section className="lp-cta">
         <h2>지금 우리 동네 무료 주차장은?</h2>
         <p>시군구를 고르면 무료로 운영하는 공영 주차장만 모아 보여 드립니다.</p>
-        <a target="_self" href="/parking?f=free" className="lp-btn lp-btn--primary">
+        <a target="_self" href="/parking/free" className="lp-btn lp-btn--primary">
           무료 주차장 찾기
         </a>
       </section>

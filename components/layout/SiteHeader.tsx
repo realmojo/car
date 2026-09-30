@@ -17,7 +17,8 @@ export default function SiteHeader() {
 
         <nav className="site-nav" aria-label="주요 메뉴">
           {NAV.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const base = item.match ?? item.href;
+            const active = pathname === base || pathname.startsWith(`${base}/`);
             return (
               <div key={item.href} className={`nav-item${item.children ? " has-sub" : ""}`}>
                 <a target="_self" href={item.href} className={active ? "is-active" : undefined}>

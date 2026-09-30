@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { findSido, findSigungu } from "@/lib/codes";
 import { findPlace, placeContext } from "@/lib/places";
 import { buildMetadata } from "@/lib/seo";
-import { withQuery } from "@/lib/url";
+import { listPath } from "@/lib/url";
+import { SECTION_HOME } from "@/lib/lists";
 import { infoOf } from "@/lib/content/common";
 import { parkingArticle } from "@/lib/content/parking";
 import { openingHours, placeJsonLd, webPageJsonLd } from "@/lib/content/jsonld";
@@ -86,9 +87,9 @@ export default async function ParkingDetailPage({ params }: { params: Promise<Pa
       <AdSlot slot="top" />
       <Crumbs
         trail={[
-          { name: "주차", path: "/parking" },
+          { name: "주차", path: SECTION_HOME.parking.path },
           ...(sidoInfo
-            ? [{ name: region, path: withQuery("/parking", { sido: sidoInfo.slug, gu: guInfo?.code }) }]
+            ? [{ name: region, path: listPath("parking", "all", sidoInfo.slug, guInfo?.code) }]
             : []),
           { name: row.name, path },
         ]}

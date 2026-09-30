@@ -1,8 +1,8 @@
-import { XML_HEADERS, sitemapEntries, urlsetXml } from "@/lib/sitemap";
+import { XML_HEADERS, sitemapIndexXml, sitemapNames } from "@/lib/sitemap";
 
 export const dynamic = "force-dynamic";
 
-/** 모든 주소를 담은 단일 사이트맵 */
+/** 사이트맵 인덱스. 실제 주소는 /sitemap/<이름>.xml 에 나눠 담는다 */
 export async function GET() {
-  return new Response(urlsetXml(await sitemapEntries()), { headers: XML_HEADERS });
+  return new Response(sitemapIndexXml(await sitemapNames()), { headers: XML_HEADERS });
 }

@@ -10,7 +10,8 @@ import { evArticle, hydrogenArticle } from "@/lib/content/charge";
 import { placeJsonLd, webPageJsonLd } from "@/lib/content/jsonld";
 import ArticleBody, { ArticleLead, JsonLd } from "@/components/article/ArticleBody";
 import AdSlot from "@/components/ads/AdSlot";
-import { withQuery } from "@/lib/url";
+import { listPath } from "@/lib/url";
+import { SECTION_HOME } from "@/lib/lists";
 import Crumbs from "@/components/common/Crumbs";
 import DetailView from "@/components/common/DetailView";
 import StatTiles from "@/components/common/StatTiles";
@@ -104,8 +105,8 @@ export default async function ChargeDetailPage({ params }: { params: Promise<Par
         <AdSlot slot="top" />
         <Crumbs
           trail={[
-            { name: "충전", path: "/charge" },
-            { name: "수소 충전소", path: "/charge?type=h2" },
+            { name: "충전", path: SECTION_HOME.charge.path },
+            { name: "수소 충전소", path: "/charge/h2" },
             { name: row.name, path },
           ]}
         />
@@ -123,9 +124,9 @@ export default async function ChargeDetailPage({ params }: { params: Promise<Par
   }
 
   const { station, error, region, all } = r;
-  const listHref = withQuery("/charge", { type: "ev", sido: region.sido.slug, gu: region.gu.code });
+  const listHref = listPath("charge", "ev", region.sido.slug, region.gu.code);
   const trail = [
-    { name: "충전", path: "/charge" },
+    { name: "충전", path: SECTION_HOME.charge.path },
     { name: `${region.sido.short} ${region.gu.name}`, path: listHref },
     { name: station?.name ?? "충전소", path: `/charge/${id}` },
   ];

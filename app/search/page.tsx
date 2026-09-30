@@ -4,7 +4,7 @@ import { filterRows, loadRows, rowId, type DatasetId, type Row } from "@/lib/dat
 import { queryPlaces, type PlaceDataset } from "@/lib/places";
 import { attempt } from "@/lib/errors";
 import { buildMetadata } from "@/lib/seo";
-import { one, withQuery, type SearchParams } from "@/lib/url";
+import { listPath, one, withQuery, type SearchParams } from "@/lib/url";
 import Crumbs from "@/components/common/Crumbs";
 import RegionForm from "@/components/common/RegionForm";
 import RowList from "@/components/common/RowList";
@@ -33,7 +33,7 @@ const GROUPS: Group[] = [
     icon: "🅿️",
     regional: true,
     href: (r, sido) => `/parking/${rowId("parking", r, sido)}`,
-    more: (sido, q) => withQuery("/parking", { sido, q }),
+    more: (sido, q) => listPath("parking", "all", sido, undefined, { q }),
   },
   {
     dataset: "repair",
@@ -41,7 +41,7 @@ const GROUPS: Group[] = [
     icon: "🔧",
     regional: true,
     href: (r, sido) => `/repair/shop-${rowId("repair", r, sido)}`,
-    more: (sido, q) => withQuery("/repair", { type: "shop", sido, q }),
+    more: (sido, q) => listPath("repair", "shop", sido, undefined, { q }),
   },
   {
     dataset: "inspection",
@@ -49,7 +49,7 @@ const GROUPS: Group[] = [
     icon: "🔍",
     regional: true,
     href: (r, sido) => `/repair/insp-${rowId("inspection", r, sido)}`,
-    more: (sido, q) => withQuery("/repair", { type: "inspection", sido, q }),
+    more: (sido, q) => listPath("repair", "inspection", sido, undefined, { q }),
   },
   {
     dataset: "hydrogen",
@@ -57,7 +57,7 @@ const GROUPS: Group[] = [
     icon: "💧",
     regional: false,
     href: (r) => `/charge/h2-${r.key}`,
-    more: (sido, q) => withQuery("/charge", { type: "h2", sido, q }),
+    more: (sido, q) => listPath("charge", "h2", sido, undefined, { q }),
   },
   {
     dataset: "rest",
@@ -131,7 +131,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
           {total === 0 && <div className="empty-box">검색 결과가 없습니다. 다른 지역이나 검색어로 찾아보세요.</div>}
           <section className="sec">
             <div className="bento-grid">
-              <a target="_self" href={withQuery("/charge", { type: "ev", sido })} className="bento-card">
+              <a target="_self" href={listPath("charge", "ev", sido)} className="bento-card">
                 <div className="bento-card__icon" aria-hidden>⚡</div>
                 <div className="bento-card__title">{sidoInfo.short} 전기차 충전소</div>
                 <p className="bento-card__desc">전기차 충전소는 실시간 상태를 보여주기 위해 시군구별로 조회합니다.</p>

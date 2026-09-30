@@ -26,6 +26,8 @@ export interface BuildMetadataInput {
   title: string;
   description: string;
   keywords?: string[];
+  /** 검색 결과·정렬·빈 목록처럼 색인할 가치가 없는 페이지. 링크는 따라가게 둔다 */
+  noindex?: boolean;
 }
 
 /**
@@ -38,6 +40,7 @@ export function buildMetadata({
   title,
   description,
   keywords,
+  noindex = false,
 }: BuildMetadataInput): Metadata {
   const url = absoluteUrl(path);
   // 모든 페이지 제목 끝에 사이트 이름을 붙인다 (이름은 SITE.name 한 곳에서만 바꾼다)
@@ -58,9 +61,9 @@ export function buildMetadata({
     },
     twitter: { card: "summary_large_image", title, description, images: ["/og.png"] },
     robots: {
-      index: true,
+      index: !noindex,
       follow: true,
-      googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+      googleBot: { index: !noindex, follow: true, "max-image-preview": "large", "max-snippet": -1 },
     },
   };
 }
