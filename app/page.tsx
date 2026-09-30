@@ -1,5 +1,5 @@
 import { NAV } from "@/lib/menu";
-import { countRows, loadRows } from "@/lib/datasets";
+import { countRows, latestRows } from "@/lib/datasets";
 import { countPlaces } from "@/lib/places";
 import { getRoadEvents, eventGroup } from "@/lib/its";
 import { attempt } from "@/lib/errors";
@@ -39,7 +39,7 @@ export default async function HomePage() {
   const [hydrogen, events, recalls, parking, repair, inspection] = await Promise.all([
     attempt(countRows("hydrogen")),
     attempt(getRoadEvents()),
-    loadRows("recall"),
+    latestRows("recall", "date", 5),
     attempt(countPlaces("parking")),
     attempt(countPlaces("repair")),
     attempt(countPlaces("inspection")),
@@ -51,7 +51,7 @@ export default async function HomePage() {
     inspection: inspection.data ?? 0,
   };
   const eventList = events.data ?? [];
-  const latestRecalls = [...(recalls ?? [])].sort((a, b) => (b.num?.date ?? 0) - (a.num?.date ?? 0)).slice(0, 5);
+  const latestRecalls = recalls ?? [];
 
   return (
     <>

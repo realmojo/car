@@ -7,7 +7,7 @@
  */
 import { SHARDED, type DatasetId, type Row, type Shard } from "./dataset-types";
 import { findSido } from "./codes";
-import { TABLES, isMock, sbAll, sbSelect } from "./supabase";
+import { COLUMNS, TABLES, isMock, sbAll, sbSelect } from "./supabase";
 
 export type { DatasetId, Row } from "./dataset-types";
 
@@ -77,6 +77,24 @@ export async function loadRows(dataset: DatasetId, sido?: string): Promise<Row[]
   if (!shard || (SHARDED[dataset] && !findSido(shard))) return null;
   const data = await loadShard(dataset, shard);
   return data?.items ?? null;
+}
+
+/**
+ * num.<field> 기준 최신 n건 (홈 요약). 전체를 받아 정렬하면 리콜만 780KB 라
+ * 캐시가 빈 워커에서 첫 화면이 몇 초씩 걸린다. DB 에서 정렬해 n건만 받는다.
+ */
+export async function latestRows(dataset: DatasetId, field: string, n: number): Promise<Row[] | null> {
+  if (isMock()) {
+    const rows = await loadRows(dataset);
+    return rows ? [...rows].sort((a, b) => (b.num?.[field] ?? 0) - (a.num?.[field] ?? 0)).slice(0, n) : null;
+  }
+  try {
+    const p = new URLSearchParams({ select: COLUMNS, order: `num->${field}.desc.nullslast,key.asc`, limit: String(n) });
+    const { rows } = await sbSelect(TABLES[dataset], p, 3600);
+    return rows.length ? rows : null;
+  } catch {
+    return null;
+  }
 }
 
 /** 데이터셋 전체 건수 (홈 요약) */
